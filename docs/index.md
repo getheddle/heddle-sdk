@@ -15,8 +15,8 @@ the same Heddle bus as Python workers.
 | Area | What you get |
 |------|--------------|
 | Wire schemas | Copied `schemas/v1/*.schema.json` from `getheddle/heddle` |
-| .NET | `Heddle.Sdk` contract models, subject helpers, shallow validation, worker base, in-memory transport |
-| Swift | `HeddleActor` `Codable` models, subject helpers, shallow validation, worker base, in-memory transport |
+| .NET | `Heddle.Sdk` core plus `Heddle.Sdk.Nats` adapter |
+| Swift | `HeddleActor` core plus `HeddleActorNATS` adapter |
 | Examples | Runnable .NET and Swift echo workers using the SDK in-memory transports |
 | Docs | Protocol concepts, architecture, language guides, and contribution standards |
 
@@ -47,6 +47,7 @@ swift run --package-path examples/swift/echo-worker EchoWorker
 | [Concepts](CONCEPTS.md) | You want the protocol mental model. |
 | [Getting Started](GETTING_STARTED.md) | You want to build and run the examples. |
 | [Workshop Compatibility](WORKSHOP.md) | You want local in-memory runs or live Workshop interop. |
+| [NATS Transports](NATS.md) | You want SDK workers on a live Heddle bus. |
 | [Swift SDK](SWIFT.md) | You are implementing a Swift processor worker. |
 | [.NET SDK](DOTNET.md) | You are implementing a C# / .NET processor worker. |
 | [Examples](EXAMPLES.md) | You want copyable worker skeletons. |

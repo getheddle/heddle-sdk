@@ -78,6 +78,16 @@ A broker adapter can implement the same interface without changing worker code:
 await new EchoWorker().RunAsync(natsTransport, cancellationToken);
 ```
 
+Use the shipped NATS adapter package for Heddle runtime interop:
+
+```csharp
+using Heddle.Sdk.Nats;
+
+await using var transport = new NatsHeddleTransport("nats://localhost:4222");
+await transport.ConnectAsync(cancellationToken);
+await new EchoWorker().RunAsync(transport, cancellationToken);
+```
+
 The checked-in example uses `InMemoryHeddleTransport` so it can run without
 NATS while still exercising the transport loop:
 
@@ -96,3 +106,5 @@ dotnet run --project examples/dotnet/EchoWorker/EchoWorker.csproj
   crashing the subscription loop.
 - `InMemoryHeddleTransport` is process-local. Use a shared broker transport for
   a native worker that needs to talk to a running Heddle or Workshop process.
+- `Heddle.Sdk.Nats` uses the official `NATS.Client.Core` package and stays
+  separate from the core SDK package.

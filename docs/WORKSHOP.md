@@ -17,7 +17,7 @@ The SDK in-memory transports are the matching local-development shape:
 |----------|-----------|
 | Unit tests and examples | `InMemoryHeddleTransport` / `InMemoryTransport` |
 | Workshop running fully in Python in one process | Heddle `InMemoryBus` |
-| External .NET or Swift worker with live Workshop | Shared broker transport, usually NATS |
+| External .NET or Swift worker with live Workshop | `Heddle.Sdk.Nats` / `HeddleActorNATS` |
 
 The in-memory transports intentionally match Heddle's local bus behavior:
 
@@ -59,3 +59,6 @@ both sides against the same broker. The subject contract does not change:
 The core packages deliberately avoid depending on a concrete NATS client. A
 broker adapter should implement `IHeddleTransport` or `HeddleTransport`, then
 pass that adapter to the same worker `RunAsync(...)` / `run(transport:)` call.
+
+See [NATS Transports](NATS.md) for the concrete adapter packages and run
+commands.

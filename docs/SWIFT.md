@@ -98,6 +98,16 @@ A broker adapter can implement the same protocol without changing worker code:
 try await EchoWorker().run(transport: natsTransport)
 ```
 
+Use the shipped NATS adapter package for Heddle runtime interop:
+
+```swift
+import HeddleActorNATS
+
+let transport = NatsTransport(url: URL(string: "nats://localhost:4222")!)
+try await transport.connect()
+try await EchoWorker().run(transport: transport)
+```
+
 The checked-in example uses `InMemoryTransport` so it can run without NATS
 while still exercising the transport loop:
 
@@ -115,3 +125,5 @@ swift run --package-path examples/swift/echo-worker EchoWorker
   subscription loop.
 - `InMemoryTransport` is process-local. Use a shared broker transport for a
   native worker that needs to talk to a running Heddle or Workshop process.
+- `HeddleActorNATS` depends on the official `nats-io/nats.swift` package and
+  stays separate from the core Swift package.

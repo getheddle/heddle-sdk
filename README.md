@@ -22,6 +22,7 @@ The upstream wire-protocol reference is
 - Swift `Codable` contract models, subject helpers, shallow schema validation,
   and a transport-agnostic worker base with an in-memory transport for local
   runs.
+- Separate NATS transport adapters for .NET and Swift live-runtime interop.
 - Runnable .NET and Swift echo-worker examples.
 - A MkDocs documentation site with source-controlled draw.io diagrams.
 
@@ -51,6 +52,7 @@ Start with:
 | [Concepts](docs/CONCEPTS.md) | Heddle's foreign-actor wire protocol in SDK terms |
 | [Getting Started](docs/GETTING_STARTED.md) | Build packages and run examples |
 | [Workshop Compatibility](docs/WORKSHOP.md) | Use SDK workers with Workshop-style local and NATS-backed flows |
+| [NATS Transports](docs/NATS.md) | Run SDK actors against Heddle, Workshop, and NATS |
 | [Swift SDK](docs/SWIFT.md) | Implement a Swift processor worker |
 | [.NET SDK](docs/DOTNET.md) | Implement a C# / .NET processor worker |
 | [Architecture](docs/ARCHITECTURE.md) | Repository layout and worker lifecycle |
@@ -67,7 +69,10 @@ uvx --from mkdocs --with mkdocs-material mkdocs build --strict
 ```text
 schemas/v1/              Canonical Heddle wire schemas copied from heddle
 dotnet/src/Heddle.Sdk/   .NET SDK package
+dotnet/src/Heddle.Sdk.Nats/
+                         .NET NATS transport adapter
 swift/                   SwiftPM package
+swift-nats/              SwiftPM NATS transport adapter
 examples/                Runnable .NET and Swift workers
 docs/                    MkDocs site
 docs/diagrams/           draw.io diagram sources

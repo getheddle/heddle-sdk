@@ -25,6 +25,7 @@ Verify:
 
 ```bash
 dotnet build dotnet/src/Heddle.Sdk/Heddle.Sdk.csproj
+dotnet build dotnet/src/Heddle.Sdk.Nats/Heddle.Sdk.Nats.csproj
 dotnet build examples/dotnet/EchoWorker/EchoWorker.csproj
 ```
 
@@ -41,6 +42,7 @@ Verify:
 ```bash
 swift build --package-path swift
 swift test --package-path swift
+swift build --package-path swift-nats
 swift build --package-path examples/swift/echo-worker
 ```
 

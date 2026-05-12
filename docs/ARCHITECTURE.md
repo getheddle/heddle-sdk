@@ -22,6 +22,9 @@ dotnet/src/Heddle.Sdk/
   HeddleWorker.cs
   InMemoryHeddleTransport.cs
 
+dotnet/src/Heddle.Sdk.Nats/
+  NatsHeddleTransport.cs
+
 swift/
   Package.swift
   Sources/HeddleActor/
@@ -31,6 +34,11 @@ swift/
     ShallowSchemaValidator.swift
     HeddleWorker.swift
     InMemoryTransport.swift
+
+swift-nats/
+  Package.swift
+  Sources/HeddleActorNATS/
+    NatsTransport.swift
 
 examples/
   dotnet/EchoWorker/
@@ -46,7 +54,8 @@ examples/
 | Subjects | Exact Heddle subject and queue-group conventions. |
 | Validation | Shallow JSON Schema boundary checks matching Heddle's runtime behavior. |
 | Worker base | Decode, validate, process, encode, publish, reset. |
-| Transport abstraction | Small publish/subscribe interface plus in-memory test transport. |
+| Core transports | Small publish/subscribe interface plus in-memory test transport. |
+| NATS adapters | Separate packages that connect the same worker loop to NATS Core. |
 
 ## Worker lifecycle
 
@@ -70,6 +79,9 @@ Workshop-style local development. They mirror Heddle's `InMemoryBus` queue-group
 behavior, but they do not create an IPC endpoint. A Swift or .NET process that
 needs to participate in a live Heddle or Workshop runtime should use a shared
 broker transport, usually NATS.
+
+The NATS adapters live in separate packages so core SDK consumers can build and
+test without pulling broker-client dependencies.
 
 ## Compatibility contract
 

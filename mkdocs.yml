@@ -67,6 +67,7 @@ nav:
     - Concepts: CONCEPTS.md
     - Getting Started: GETTING_STARTED.md
     - Workshop Compatibility: WORKSHOP.md
+    - NATS Transports: NATS.md
     - Swift SDK: SWIFT.md
     - .NET SDK: DOTNET.md
     - Examples: EXAMPLES.md

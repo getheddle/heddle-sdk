@@ -18,6 +18,8 @@ loop that a broker-backed deployment uses.
 ```bash
 dotnet build dotnet/src/Heddle.Sdk/Heddle.Sdk.csproj
 swift build --package-path swift
+dotnet build dotnet/src/Heddle.Sdk.Nats/Heddle.Sdk.Nats.csproj
+swift build --package-path swift-nats
 ```
 
 ## Run the .NET example
@@ -57,3 +59,5 @@ Read the language guide for your target:
 Then replace the echo payload and output with your worker's domain types.
 Read [Workshop Compatibility](WORKSHOP.md) before wiring a native worker into a
 running Workshop instance.
+Use [NATS Transports](NATS.md) when you are ready to run the worker on a live
+Heddle bus.

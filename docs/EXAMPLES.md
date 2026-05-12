@@ -33,6 +33,7 @@ Replace the in-memory transport with a broker-backed transport:
 | Print the result from a local subscriber | Publish to `heddle.results.{parent_task_id}` |
 
 The worker subclass does not change.
+See [NATS Transports](NATS.md) for the shipped adapter packages.
 
 ## Worker config in Heddle
 
