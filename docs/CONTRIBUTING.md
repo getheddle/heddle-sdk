@@ -31,6 +31,7 @@ Run:
 
 ```bash
 dotnet build dotnet/src/Heddle.Sdk/Heddle.Sdk.csproj
+dotnet test dotnet/tests/Heddle.Sdk.Tests/Heddle.Sdk.Tests.csproj
 dotnet build dotnet/src/Heddle.Sdk.Nats/Heddle.Sdk.Nats.csproj
 dotnet build examples/dotnet/EchoWorker/EchoWorker.csproj
 swift build --package-path swift

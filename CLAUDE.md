@@ -9,8 +9,10 @@ transport-agnostic worker bases for languages outside the Python runtime.
 The first supported languages are:
 
 ```text
-dotnet/src/Heddle.Sdk/   C# / .NET package
-swift/                   SwiftPM package named HeddleActor
+dotnet/src/Heddle.Sdk/        C# / .NET core package
+dotnet/src/Heddle.Sdk.Nats/   C# / .NET NATS adapter
+swift/                        SwiftPM package named HeddleActor
+swift-nats/                   SwiftPM package named HeddleActorNATS
 ```
 
 The upstream Heddle repository owns the runtime, router, orchestrators, Python
@@ -22,7 +24,7 @@ must stay synchronized with those contracts.
 - **SDK, not Python bindings.** The interop surface is NATS subjects plus JSON
   envelopes. Nothing here imports Python or binds to Python ABI internals.
 - **Transport core is abstract.** `IHeddleTransport` and `HeddleTransport`
-  are the dependency-light core. NATS adapters can be separate packages later.
+  are the dependency-light core. NATS adapters live in separate packages.
 - **Processor workers first.** Foreign actors are intended for native
   processing, ML inference, transforms, or platform-specific capabilities.
 - **Heddle remains source of truth.** When upstream Pydantic message models
@@ -44,9 +46,12 @@ must stay synchronized with those contracts.
 
 ```bash
 dotnet build dotnet/src/Heddle.Sdk/Heddle.Sdk.csproj
+dotnet test dotnet/tests/Heddle.Sdk.Tests/Heddle.Sdk.Tests.csproj
+dotnet build dotnet/src/Heddle.Sdk.Nats/Heddle.Sdk.Nats.csproj
 dotnet build examples/dotnet/EchoWorker/EchoWorker.csproj
 swift build --package-path swift
 swift test --package-path swift
+swift build --package-path swift-nats
 swift build --package-path examples/swift/echo-worker
 uvx --from mkdocs --with mkdocs-material mkdocs build --strict
 ```

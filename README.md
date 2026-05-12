@@ -33,6 +33,7 @@ worker code.
 
 ```bash
 dotnet build dotnet/src/Heddle.Sdk/Heddle.Sdk.csproj
+dotnet test dotnet/tests/Heddle.Sdk.Tests/Heddle.Sdk.Tests.csproj
 swift build --package-path swift
 ```
 
@@ -69,6 +70,7 @@ uvx --from mkdocs --with mkdocs-material mkdocs build --strict
 ```text
 schemas/v1/              Canonical Heddle wire schemas copied from heddle
 dotnet/src/Heddle.Sdk/   .NET SDK package
+dotnet/tests/            .NET SDK regression tests
 dotnet/src/Heddle.Sdk.Nats/
                          .NET NATS transport adapter
 swift/                   SwiftPM package

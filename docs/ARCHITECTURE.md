@@ -25,6 +25,9 @@ dotnet/src/Heddle.Sdk/
 dotnet/src/Heddle.Sdk.Nats/
   NatsHeddleTransport.cs
 
+dotnet/tests/Heddle.Sdk.Tests/
+  WorkerLoopTests.cs
+
 swift/
   Package.swift
   Sources/HeddleActor/

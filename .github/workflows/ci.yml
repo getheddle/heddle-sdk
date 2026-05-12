@@ -19,6 +19,8 @@ jobs:
           dotnet-version: "8.0.x"
       - name: Build SDK
         run: dotnet build dotnet/src/Heddle.Sdk/Heddle.Sdk.csproj --configuration Release
+      - name: Test SDK
+        run: dotnet test dotnet/tests/Heddle.Sdk.Tests/Heddle.Sdk.Tests.csproj --configuration Release
       - name: Build NATS adapter
         run: dotnet build dotnet/src/Heddle.Sdk.Nats/Heddle.Sdk.Nats.csproj --configuration Release
       - name: Build examples

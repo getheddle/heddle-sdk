@@ -42,9 +42,12 @@ the same documentation quality bar.
 
 ```bash
 dotnet build dotnet/src/Heddle.Sdk/Heddle.Sdk.csproj
+dotnet test dotnet/tests/Heddle.Sdk.Tests/Heddle.Sdk.Tests.csproj
+dotnet build dotnet/src/Heddle.Sdk.Nats/Heddle.Sdk.Nats.csproj
 dotnet build examples/dotnet/EchoWorker/EchoWorker.csproj
 swift build --package-path swift
 swift test --package-path swift
+swift build --package-path swift-nats
 swift build --package-path examples/swift/echo-worker
 ```
 
@@ -68,7 +71,11 @@ then regenerates dark variants.
 ```text
 schemas/v1/              Copied canonical JSON Schemas from heddle
 dotnet/src/Heddle.Sdk/   .NET contract models and worker base
+dotnet/src/Heddle.Sdk.Nats/
+                         .NET NATS transport adapter
+dotnet/tests/            .NET SDK tests
 swift/                   SwiftPM package: HeddleActor
+swift-nats/              SwiftPM NATS transport adapter
 examples/dotnet/         Runnable .NET examples
 examples/swift/          Runnable Swift examples
 docs/                    MkDocs site

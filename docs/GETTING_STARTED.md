@@ -22,6 +22,13 @@ dotnet build dotnet/src/Heddle.Sdk.Nats/Heddle.Sdk.Nats.csproj
 swift build --package-path swift-nats
 ```
 
+## Run the SDK tests
+
+```bash
+dotnet test dotnet/tests/Heddle.Sdk.Tests/Heddle.Sdk.Tests.csproj
+swift test --package-path swift
+```
+
 ## Run the .NET example
 
 ```bash
