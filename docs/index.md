@@ -57,6 +57,9 @@ swift run --package-path examples/swift/echo-worker EchoWorker
 The sibling `getheddle/heddle` repository owns the runtime framework,
 canonical Pydantic models, exported JSON Schemas, router, orchestrators,
 Workshop, and Python workers.
+Its rendered docs live at <https://getheddle.github.io/heddle/>, and the
+canonical SDK-facing protocol page is
+[Foreign-Language Actors](https://getheddle.github.io/heddle/foreign-actors/).
 
 This repository owns language-specific SDK surfaces that mirror that contract.
 When upstream message models change, update `heddle` first, export schemas

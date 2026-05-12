@@ -11,6 +11,8 @@ workers.
 Heddle's Python repository owns the runtime framework and canonical wire
 schemas. This repository packages those contracts for other language
 ecosystems, starting with .NET and Swift.
+The upstream wire-protocol reference is
+[Foreign-Language Actors](https://getheddle.github.io/heddle/foreign-actors/).
 
 ## What ships
 
@@ -82,6 +84,8 @@ The bus protocol is intentionally small:
 
 The Python repository remains the source of truth. When the Pydantic models
 change there, run its schema export, then copy the updated files here.
+For the broader runtime documentation, see
+[getheddle.github.io/heddle](https://getheddle.github.io/heddle/).
 
 ## License
 

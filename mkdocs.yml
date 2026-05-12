@@ -69,6 +69,7 @@ nav:
     - Swift SDK: SWIFT.md
     - .NET SDK: DOTNET.md
     - Examples: EXAMPLES.md
+    - Heddle Runtime Docs: https://getheddle.github.io/heddle/
   - Architecture:
     - Overview: ARCHITECTURE.md
   - Development:
