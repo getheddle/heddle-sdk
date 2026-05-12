@@ -7,7 +7,7 @@ small, explicit, and aligned across languages.
 
 - Preserve upstream wire names exactly.
 - Prefer standard-library types and dependency-light implementations.
-- Keep transport-specific code outside the core SDK packages.
+- Keep broker-specific code outside the core SDK packages.
 - Add docs and examples when a new public concept appears.
 - Keep examples runnable without NATS or external services.
 

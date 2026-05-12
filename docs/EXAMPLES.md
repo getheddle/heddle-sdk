@@ -10,8 +10,9 @@ Both examples:
 2. Define a typed output.
 3. Subclass the language worker base.
 4. Supply shallow input/output schemas.
-5. Process a `TaskMessage`.
-6. Print a `TaskResult`.
+5. Subscribe through the SDK in-memory transport.
+6. Publish a `TaskMessage`.
+7. Print the resulting `TaskResult`.
 
 Run them:
 
@@ -20,15 +21,16 @@ dotnet run --project examples/dotnet/EchoWorker/EchoWorker.csproj
 swift run --package-path examples/swift/echo-worker EchoWorker
 ```
 
-## Moving from example to production
+## Moving from example to live runtime
 
-Replace direct `handle` calls with a transport run loop:
+Replace the in-memory transport with a broker-backed transport:
 
-| Example mode | Production mode |
-|--------------|-----------------|
-| Build a `TaskMessage` in `main` | Receive `TaskMessage` from NATS |
-| Call `HandleAsync(...)` / `handle(...)` | Call `RunAsync(...)` / `run(transport:)` |
-| Print the result | Publish to `heddle.results.{parent_task_id}` |
+| Example mode | Live runtime mode |
+|--------------|-------------------|
+| Build a `TaskMessage` in `main` | Receive `TaskMessage` from the Heddle router |
+| Use `InMemoryHeddleTransport` / `InMemoryTransport` | Use a shared broker transport, usually NATS |
+| Call `RunAsync(...)` / `run(transport:)` | Keep the same worker run-loop call |
+| Print the result from a local subscriber | Publish to `heddle.results.{parent_task_id}` |
 
 The worker subclass does not change.
 

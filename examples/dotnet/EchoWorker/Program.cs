@@ -3,6 +3,9 @@ using System.Text.Json.Nodes;
 using Heddle.Sdk;
 
 var worker = new EchoWorker();
+await using var transport = new InMemoryHeddleTransport();
+using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+
 var task = new TaskMessage
 {
     TaskId = "task-echo-1",
@@ -19,8 +22,39 @@ var task = new TaskMessage
     },
 };
 
-var result = await worker.HandleAsync(task);
+var resultSubject = HeddleSubjects.Results(task.ParentTaskId);
+await using var resultMessages = transport
+    .SubscribeAsync(resultSubject, cancellationToken: timeout.Token)
+    .GetAsyncEnumerator(timeout.Token);
+
+var workerLoop = worker.RunAsync(transport, timeout.Token);
+while (transport.SubscriberCount(worker.Subject, worker.QueueGroup) == 0)
+{
+    await Task.Delay(TimeSpan.FromMilliseconds(10), timeout.Token);
+}
+
+await transport.PublishAsync(
+    worker.Subject,
+    HeddleJson.SerializeToBytes(task),
+    timeout.Token);
+
+if (!await resultMessages.MoveNextAsync())
+{
+    throw new InvalidOperationException("Worker completed without publishing a result.");
+}
+
+var result = HeddleJson.Deserialize<TaskResult>(resultMessages.Current.Payload.Span);
 Console.WriteLine(JsonSerializer.Serialize(result, HeddleJson.Options));
+
+await transport.DisposeAsync();
+try
+{
+    await workerLoop;
+}
+catch (OperationCanceledException)
+{
+    // The example cancels the loop after the single demonstration task.
+}
 
 internal sealed record EchoPayload(string Text);
 

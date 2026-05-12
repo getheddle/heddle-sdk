@@ -20,6 +20,7 @@ dotnet/src/Heddle.Sdk/
   Transport.cs
   ShallowSchemaValidator.cs
   HeddleWorker.cs
+  InMemoryHeddleTransport.cs
 
 swift/
   Package.swift
@@ -29,6 +30,7 @@ swift/
     Transport.swift
     ShallowSchemaValidator.swift
     HeddleWorker.swift
+    InMemoryTransport.swift
 
 examples/
   dotnet/EchoWorker/
@@ -44,7 +46,7 @@ examples/
 | Subjects | Exact Heddle subject and queue-group conventions. |
 | Validation | Shallow JSON Schema boundary checks matching Heddle's runtime behavior. |
 | Worker base | Decode, validate, process, encode, publish, reset. |
-| Transport abstraction | Small publish/subscribe interface for future NATS adapters. |
+| Transport abstraction | Small publish/subscribe interface plus in-memory test transport. |
 
 ## Worker lifecycle
 
@@ -60,6 +62,14 @@ subscription loop continues.
 Processing failures become `TaskResult(status = failed)`. The result keeps the
 task ID, parent task ID, worker type, and trace context so callers can correlate
 the failure.
+
+## Transport compatibility
+
+The in-memory transports are same-process harnesses for tests, examples, and
+Workshop-style local development. They mirror Heddle's `InMemoryBus` queue-group
+behavior, but they do not create an IPC endpoint. A Swift or .NET process that
+needs to participate in a live Heddle or Workshop runtime should use a shared
+broker transport, usually NATS.
 
 ## Compatibility contract
 

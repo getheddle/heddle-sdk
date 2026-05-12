@@ -48,6 +48,54 @@ final class EchoWorker: HeddleWorker<EchoPayload, EchoOutput>, @unchecked Sendab
     }
 }
 
+enum ExampleError: Error {
+    case timedOutWaitingForSubscription
+    case timedOutWaitingForResult
+    case resultStreamClosed
+}
+
+func waitForWorkerSubscription(
+    transport: InMemoryTransport,
+    worker: EchoWorker
+) async throws {
+    for _ in 0..<500 {
+        let count = await transport.subscriberCount(
+            subject: worker.subject,
+            queueGroup: worker.queueGroup
+        )
+        if count > 0 {
+            return
+        }
+
+        try await Task.sleep(for: .milliseconds(10))
+    }
+
+    throw ExampleError.timedOutWaitingForSubscription
+}
+
+func firstResult(
+    from stream: AsyncThrowingStream<HeddleMessage, Error>
+) async throws -> HeddleMessage {
+    try await withThrowingTaskGroup(of: HeddleMessage.self) { group in
+        group.addTask {
+            var iterator = stream.makeAsyncIterator()
+            guard let message = try await iterator.next() else {
+                throw ExampleError.resultStreamClosed
+            }
+            return message
+        }
+
+        group.addTask {
+            try await Task.sleep(for: .seconds(5))
+            throw ExampleError.timedOutWaitingForResult
+        }
+
+        let message = try await group.next()!
+        group.cancelAll()
+        return message
+    }
+}
+
 let task = TaskMessage(
     taskId: "task-echo-1",
     parentTaskId: "goal-demo-1",
@@ -59,6 +107,28 @@ let task = TaskMessage(
     ]
 )
 
-let result = await EchoWorker().handle(task)
+let worker = EchoWorker()
+let transport = InMemoryTransport()
+let results = try await transport.subscribe(
+    subject: HeddleSubjects.results(parentTaskId: task.parentTaskId),
+    queueGroup: nil
+)
+
+let workerLoop = Task {
+    try await worker.run(transport: transport)
+}
+
+try await waitForWorkerSubscription(transport: transport, worker: worker)
+try await transport.publish(
+    subject: worker.subject,
+    payload: HeddleCoders.encode(task)
+)
+
+let message = try await firstResult(from: results)
+let result = try HeddleCoders.decode(TaskResult.self, from: message.payload)
 let data = try HeddleCoders.encode(result)
 print(String(decoding: data, as: UTF8.self))
+
+await transport.close()
+workerLoop.cancel()
+_ = try? await workerLoop.value

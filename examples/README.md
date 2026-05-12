@@ -1,11 +1,12 @@
 # Examples
 
 The examples are intentionally small and infrastructure-free. They show how to
-write a foreign processor worker with the SDK, feed it a `TaskMessage`, and get
-back a `TaskResult` with the Heddle wire shape.
+write a foreign processor worker with the SDK, feed it a `TaskMessage` through
+the SDK in-memory transport, and get back a `TaskResult` with the Heddle wire
+shape.
 
-Real deployments add a transport adapter, usually NATS, and call the worker's
-run loop. The processing code stays the same.
+Real deployments replace the in-memory transport with a broker adapter, usually
+NATS. The worker run loop and processing code stay the same.
 
 ## .NET echo worker
 
@@ -34,5 +35,5 @@ logical payload, and prints the encoded result JSON.
 
 What not to copy:
 
-- Direct calls to `handle(...)` in production. Use `run(transport:)` /
-  `RunAsync(...)` with a real transport adapter.
+- The in-memory transport for a worker that needs to talk to a running Heddle or
+  Workshop process. Use a shared broker transport for cross-process interop.

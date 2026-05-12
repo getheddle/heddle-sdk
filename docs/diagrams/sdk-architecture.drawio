@@ -19,7 +19,7 @@
         <mxCell id="swift" value="SwiftPM package&lt;br&gt;HeddleActor&lt;br&gt;Codable models · worker base · transport protocol" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#1e1e26;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="840" y="240" width="260" height="110" as="geometry"/>
         </mxCell>
-        <mxCell id="transport" value="Transport adapters&lt;br&gt;NATS later; core stays abstract" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontColor=#1e1e26;fontStyle=1;" vertex="1" parent="1">
+        <mxCell id="transport" value="Transport adapters&lt;br&gt;in-memory local · broker-backed runtime" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontColor=#1e1e26;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="470" y="370" width="260" height="90" as="geometry"/>
         </mxCell>
         <mxCell id="worker" value="foreign processor workers&lt;br&gt;native code, stateless tasks, JSON results" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontColor=#1e1e26;fontStyle=1;" vertex="1" parent="1">

@@ -18,13 +18,15 @@ The upstream wire-protocol reference is
 
 - Vendored `schemas/v1/*.schema.json` from `getheddle/heddle`.
 - .NET contract models, subject helpers, shallow schema validation, and a
-  transport-agnostic worker loop.
+  transport-agnostic worker loop with an in-memory transport for local runs.
 - Swift `Codable` contract models, subject helpers, shallow schema validation,
-  and a transport-agnostic worker base.
+  and a transport-agnostic worker base with an in-memory transport for local
+  runs.
 - Runnable .NET and Swift echo-worker examples.
 - A MkDocs documentation site with source-controlled draw.io diagrams.
 
-NATS-specific transport adapters will land after the contract packages settle.
+Broker-specific adapters can live beside the core packages without changing
+worker code.
 
 ## Quick start
 
@@ -48,6 +50,7 @@ Start with:
 |-------|-------------|
 | [Concepts](docs/CONCEPTS.md) | Heddle's foreign-actor wire protocol in SDK terms |
 | [Getting Started](docs/GETTING_STARTED.md) | Build packages and run examples |
+| [Workshop Compatibility](docs/WORKSHOP.md) | Use SDK workers with Workshop-style local and NATS-backed flows |
 | [Swift SDK](docs/SWIFT.md) | Implement a Swift processor worker |
 | [.NET SDK](docs/DOTNET.md) | Implement a C# / .NET processor worker |
 | [Architecture](docs/ARCHITECTURE.md) | Repository layout and worker lifecycle |

@@ -44,6 +44,17 @@ Foreign processor workers should subscribe to
 `processors-{worker_type}`. Queue groups prevent every replica from receiving
 the same task.
 
+## Transports
+
+SDK workers depend on a small publish/subscribe transport boundary, not on a
+specific broker client. The checked-in .NET and Swift packages include
+process-local in-memory transports for tests and examples. Those transports
+match Heddle's local `InMemoryBus` queue-group behavior, but they do not cross
+process boundaries.
+
+Use a shared broker transport, usually NATS, when a native worker needs to
+participate in a live Heddle or Workshop runtime.
+
 ## Worker lifecycle
 
 ![Worker lifecycle](images/worker-lifecycle.svg#only-light)

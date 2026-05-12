@@ -64,14 +64,22 @@ public interface IHeddleTransport : IAsyncDisposable
 }
 ```
 
-A NATS adapter can implement that interface without changing worker code:
+The core package includes an in-memory implementation for local examples and
+tests:
+
+```csharp
+await using var transport = new InMemoryHeddleTransport();
+await new EchoWorker().RunAsync(transport, cancellationToken);
+```
+
+A broker adapter can implement the same interface without changing worker code:
 
 ```csharp
 await new EchoWorker().RunAsync(natsTransport, cancellationToken);
 ```
 
-The checked-in example calls `HandleAsync(...)` directly so it can run without
-NATS:
+The checked-in example uses `InMemoryHeddleTransport` so it can run without
+NATS while still exercising the transport loop:
 
 ```bash
 dotnet run --project examples/dotnet/EchoWorker/EchoWorker.csproj
@@ -86,3 +94,5 @@ dotnet run --project examples/dotnet/EchoWorker/EchoWorker.csproj
 - Override `ResetAsync(...)` to clear temporary resources after each task.
 - Override `OnMalformedMessageAsync(...)` to log malformed input without
   crashing the subscription loop.
+- `InMemoryHeddleTransport` is process-local. Use a shared broker transport for
+  a native worker that needs to talk to a running Heddle or Workshop process.

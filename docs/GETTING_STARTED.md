@@ -9,7 +9,9 @@ the examples.
 - Swift 6 or newer
 - Python 3.11+ only if you want to build the docs locally
 
-No NATS server is required for the checked-in examples.
+No NATS server is required for the checked-in examples. They use the SDK
+in-memory transports to exercise the same `run(transport:)` / `RunAsync(...)`
+loop that a broker-backed deployment uses.
 
 ## Build the SDKs
 
@@ -53,3 +55,5 @@ Read the language guide for your target:
 - [.NET SDK](DOTNET.md)
 
 Then replace the echo payload and output with your worker's domain types.
+Read [Workshop Compatibility](WORKSHOP.md) before wiring a native worker into a
+running Workshop instance.
