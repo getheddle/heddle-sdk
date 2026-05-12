@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn>
+    <PackageId>Heddle.Sdk</PackageId>
+    <Version>0.1.0-alpha.1</Version>
+    <Authors>Heddle</Authors>
+    <Description>Contract models and actor runtime helpers for Heddle foreign-language processor workers.</Description>
+    <PackageLicenseExpression>MPL-2.0</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/getheddle/heddle-sdk</RepositoryUrl>
+  </PropertyGroup>
+</Project>
