@@ -90,6 +90,11 @@ Install the development headers before building:
 sudo apt-get install libsodium-dev
 ```
 
+The adapter package pins the transitive `swift-sodium` dependency to `0.9.1`
+because current Ubuntu LTS packages expose the stable libsodium APIs required by
+NKey signing, but not the newer AEGIS APIs compiled by later `swift-sodium`
+releases.
+
 ## Subject contract
 
 Adapters carry raw Heddle JSON envelopes on NATS Core subjects:
