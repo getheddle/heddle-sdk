@@ -83,6 +83,13 @@ try await transport.connect()
 try await EchoWorker().run(transport: transport)
 ```
 
+On Linux, the Swift NATS dependency chain uses libsodium for NKey support.
+Install the development headers before building:
+
+```bash
+sudo apt-get install libsodium-dev
+```
+
 ## Subject contract
 
 Adapters carry raw Heddle JSON envelopes on NATS Core subjects:

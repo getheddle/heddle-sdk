@@ -31,6 +31,8 @@ jobs:
       - uses: swift-actions/setup-swift@v2
         with:
           swift-version: "6.0"
+      - name: Install Swift NATS native dependencies
+        run: sudo apt-get update && sudo apt-get install -y libsodium-dev
       - name: Test SDK
         run: swift test --package-path swift
       - name: Build NATS adapter
