@@ -1,0 +1,58 @@
+<mxfile host="app.diagrams.net" modified="2026-05-12T00:00:00.000Z" agent="Codex" version="24.7.17">
+  <diagram id="sdk-architecture" name="SDK architecture">
+    <mxGraphModel dx="1300" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="760" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="title" value="Heddle SDK architecture" style="text;html=1;strokeColor=none;fillColor=none;fontSize=24;fontStyle=1;fontColor=#1e1e26;align=left;" vertex="1" parent="1">
+          <mxGeometry x="40" y="30" width="520" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="runtime" value="getheddle/heddle&lt;br&gt;Python runtime&lt;br&gt;router · orchestrator · workers · Workshop" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontColor=#1e1e26;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="70" y="120" width="260" height="120" as="geometry"/>
+        </mxCell>
+        <mxCell id="schemas" value="schemas/v1&lt;br&gt;canonical JSON envelopes&lt;br&gt;TaskMessage · TaskResult · OrchestratorGoal" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#1e1e26;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="470" y="110" width="260" height="120" as="geometry"/>
+        </mxCell>
+        <mxCell id="dotnet" value=".NET package&lt;br&gt;Heddle.Sdk&lt;br&gt;records · worker base · transport interface" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#1e1e26;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="840" y="90" width="260" height="110" as="geometry"/>
+        </mxCell>
+        <mxCell id="swift" value="SwiftPM package&lt;br&gt;HeddleActor&lt;br&gt;Codable models · worker base · transport protocol" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#1e1e26;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="840" y="240" width="260" height="110" as="geometry"/>
+        </mxCell>
+        <mxCell id="transport" value="Transport adapters&lt;br&gt;NATS later; core stays abstract" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontColor=#1e1e26;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="470" y="370" width="260" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="worker" value="foreign processor workers&lt;br&gt;native code, stateless tasks, JSON results" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontColor=#1e1e26;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="840" y="420" width="260" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="bus" value="Heddle bus&lt;br&gt;heddle.tasks.* · heddle.results.*" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#1e1e26;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="70" y="390" width="260" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge1" style="endArrow=block;html=1;rounded=0;strokeColor=#666666;" edge="1" parent="1" source="runtime" target="schemas">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge2" style="endArrow=block;html=1;rounded=0;strokeColor=#666666;" edge="1" parent="1" source="schemas" target="dotnet">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge3" style="endArrow=block;html=1;rounded=0;strokeColor=#666666;" edge="1" parent="1" source="schemas" target="swift">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge4" style="endArrow=block;html=1;rounded=0;strokeColor=#666666;" edge="1" parent="1" source="dotnet" target="worker">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge5" style="endArrow=block;html=1;rounded=0;strokeColor=#666666;" edge="1" parent="1" source="swift" target="worker">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge6" style="endArrow=block;html=1;rounded=0;strokeColor=#666666;" edge="1" parent="1" source="transport" target="worker">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge7" style="endArrow=block;html=1;rounded=0;strokeColor=#666666;" edge="1" parent="1" source="worker" target="bus">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge8" style="endArrow=block;html=1;rounded=0;strokeColor=#666666;" edge="1" parent="1" source="bus" target="runtime">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

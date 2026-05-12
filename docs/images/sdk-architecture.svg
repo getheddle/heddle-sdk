@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 680" width="1200" height="680">
+  <rect width="1200" height="680" rx="12" fill="#ffffff"/>
+  <text x="40" y="54" font-family="Inter, system-ui, sans-serif" font-size="28" font-weight="700" fill="#1e1e26">Heddle SDK architecture</text>
+  <text x="40" y="82" font-family="Inter, system-ui, sans-serif" font-size="14" fill="#666666">Language SDKs mirror Heddle's wire contract without binding to Python internals.</text>
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 6" refX="10" refY="3" markerWidth="9" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 3 L 0 6 z" fill="#666666"/>
+    </marker>
+  </defs>
+
+  <rect x="60" y="130" width="280" height="115" rx="10" fill="#e1d5e7" stroke="#9673a6" stroke-width="2"/>
+  <text x="200" y="166" font-family="Inter, system-ui, sans-serif" font-size="18" font-weight="700" text-anchor="middle" fill="#1e1e26">getheddle/heddle</text>
+  <text x="200" y="194" font-family="Inter, system-ui, sans-serif" font-size="13" text-anchor="middle" fill="#333333">Python runtime</text>
+  <text x="200" y="216" font-family="Inter, system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#666666">router · orchestrator · workers · Workshop</text>
+
+  <rect x="460" y="120" width="280" height="120" rx="10" fill="#fff2cc" stroke="#d6b656" stroke-width="2"/>
+  <text x="600" y="156" font-family="Inter, system-ui, sans-serif" font-size="18" font-weight="700" text-anchor="middle" fill="#1e1e26">schemas/v1</text>
+  <text x="600" y="184" font-family="Inter, system-ui, sans-serif" font-size="13" text-anchor="middle" fill="#333333">canonical JSON envelopes</text>
+  <text x="600" y="207" font-family="Inter, system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#666666">TaskMessage · TaskResult · OrchestratorGoal</text>
+
+  <rect x="860" y="90" width="260" height="105" rx="10" fill="#dae8fc" stroke="#6c8ebf" stroke-width="2"/>
+  <text x="990" y="126" font-family="Inter, system-ui, sans-serif" font-size="18" font-weight="700" text-anchor="middle" fill="#1e1e26">.NET</text>
+  <text x="990" y="153" font-family="Inter, system-ui, sans-serif" font-size="13" text-anchor="middle" fill="#333333">Heddle.Sdk</text>
+  <text x="990" y="174" font-family="Inter, system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#666666">records · worker base · transport interface</text>
+
+  <rect x="860" y="240" width="260" height="105" rx="10" fill="#d5e8d4" stroke="#82b366" stroke-width="2"/>
+  <text x="990" y="276" font-family="Inter, system-ui, sans-serif" font-size="18" font-weight="700" text-anchor="middle" fill="#1e1e26">Swift</text>
+  <text x="990" y="303" font-family="Inter, system-ui, sans-serif" font-size="13" text-anchor="middle" fill="#333333">HeddleActor</text>
+  <text x="990" y="324" font-family="Inter, system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#666666">Codable models · worker base · transport protocol</text>
+
+  <rect x="460" y="385" width="280" height="90" rx="10" fill="#ffe6cc" stroke="#d79b00" stroke-width="2"/>
+  <text x="600" y="421" font-family="Inter, system-ui, sans-serif" font-size="18" font-weight="700" text-anchor="middle" fill="#1e1e26">Transport adapters</text>
+  <text x="600" y="450" font-family="Inter, system-ui, sans-serif" font-size="13" text-anchor="middle" fill="#333333">NATS later; core stays abstract</text>
+
+  <rect x="860" y="435" width="260" height="95" rx="10" fill="#f8cecc" stroke="#b85450" stroke-width="2"/>
+  <text x="990" y="471" font-family="Inter, system-ui, sans-serif" font-size="18" font-weight="700" text-anchor="middle" fill="#1e1e26">Foreign workers</text>
+  <text x="990" y="498" font-family="Inter, system-ui, sans-serif" font-size="13" text-anchor="middle" fill="#333333">native processor code</text>
+  <text x="990" y="519" font-family="Inter, system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#666666">stateless tasks · JSON results</text>
+
+  <rect x="60" y="400" width="280" height="95" rx="10" fill="#fff2cc" stroke="#d6b656" stroke-width="2"/>
+  <text x="200" y="438" font-family="Inter, system-ui, sans-serif" font-size="18" font-weight="700" text-anchor="middle" fill="#1e1e26">Heddle bus</text>
+  <text x="200" y="466" font-family="Inter, system-ui, sans-serif" font-size="13" text-anchor="middle" fill="#333333">heddle.tasks.* · heddle.results.*</text>
+
+  <line x1="340" y1="185" x2="460" y2="180" stroke="#666666" stroke-width="2.4" marker-end="url(#arrow)"/>
+  <line x1="740" y1="165" x2="860" y2="143" stroke="#666666" stroke-width="2.4" marker-end="url(#arrow)"/>
+  <line x1="740" y1="200" x2="860" y2="292" stroke="#666666" stroke-width="2.4" marker-end="url(#arrow)"/>
+  <line x1="990" y1="195" x2="990" y2="240" stroke="#666666" stroke-width="2.4" marker-end="url(#arrow)"/>
+  <line x1="990" y1="345" x2="990" y2="435" stroke="#666666" stroke-width="2.4" marker-end="url(#arrow)"/>
+  <line x1="740" y1="430" x2="860" y2="480" stroke="#666666" stroke-width="2.4" marker-end="url(#arrow)"/>
+  <line x1="860" y1="485" x2="340" y2="450" stroke="#666666" stroke-width="2.4" marker-end="url(#arrow)"/>
+  <line x1="200" y1="400" x2="200" y2="245" stroke="#666666" stroke-width="2.4" marker-end="url(#arrow)"/>
+
+  <text x="60" y="610" font-family="Inter, system-ui, sans-serif" font-size="13" fill="#666666">Rule: update Heddle first, export schemas, then update SDK wrappers and examples.</text>
+</svg>

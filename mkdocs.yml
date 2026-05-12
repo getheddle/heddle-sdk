@@ -1,0 +1,76 @@
+site_name: Heddle SDK
+site_description: Language SDKs and actor-runtime helpers for Heddle foreign-language workers.
+site_url: https://getheddle.github.io/heddle-sdk/
+repo_url: https://github.com/getheddle/heddle-sdk
+repo_name: getheddle/heddle-sdk
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+    - toc.follow
+  icon:
+    repo: fontawesome/brands/github
+
+extra_css:
+  - stylesheets/theme-aware-images.css
+
+plugins:
+  - search
+
+exclude_docs: |
+  diagrams/README.md
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - toc:
+      permalink: true
+  - attr_list
+  - md_in_html
+  - def_list
+
+nav:
+  - Home: index.md
+  - User Guide:
+    - Concepts: CONCEPTS.md
+    - Getting Started: GETTING_STARTED.md
+    - Swift SDK: SWIFT.md
+    - .NET SDK: DOTNET.md
+    - Examples: EXAMPLES.md
+  - Architecture:
+    - Overview: ARCHITECTURE.md
+  - Development:
+    - Contributing: CONTRIBUTING.md
+    - Coding Guide: CODING_GUIDE.md

@@ -17,7 +17,10 @@ jobs:
       - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: "8.0.x"
-      - run: dotnet build dotnet/src/Heddle.Sdk/Heddle.Sdk.csproj --configuration Release
+      - name: Build SDK
+        run: dotnet build dotnet/src/Heddle.Sdk/Heddle.Sdk.csproj --configuration Release
+      - name: Build examples
+        run: dotnet build examples/dotnet/EchoWorker/EchoWorker.csproj --configuration Release
 
   swift:
     runs-on: ubuntu-latest
@@ -26,5 +29,19 @@ jobs:
       - uses: swift-actions/setup-swift@v2
         with:
           swift-version: "6.0"
-      - run: swift test --package-path swift
+      - name: Test SDK
+        run: swift test --package-path swift
+      - name: Build examples
+        run: swift build --package-path examples/swift/echo-worker
 
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install docs dependencies
+        run: python -m pip install -r docs/requirements.txt
+      - name: Build docs
+        run: mkdocs build --strict

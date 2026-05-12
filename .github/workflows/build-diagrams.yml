@@ -1,0 +1,43 @@
+name: Build diagrams
+
+on:
+  push:
+    paths:
+      - 'docs/diagrams/**.drawio'
+      - 'docs/diagrams/make_dark_variants.py'
+  pull_request:
+    paths:
+      - 'docs/diagrams/**.drawio'
+      - 'docs/diagrams/make_dark_variants.py'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+          fetch-depth: 0
+      - name: Export drawio to SVG
+        uses: rlespinasse/drawio-export-action@v2
+        with:
+          path: docs/diagrams
+          format: svg
+          output: ../images
+          embed-diagram: true
+          remove-page-suffix: true
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Generate dark variants
+        run: python docs/diagrams/make_dark_variants.py
+      - name: Commit exported SVGs
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          file_pattern: 'docs/images/*.svg'
+          commit_message: 'chore(diagrams): auto-export drawio + dark variants'

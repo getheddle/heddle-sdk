@@ -1,0 +1,18 @@
+/* Theme-aware image switching.
+ *
+ * Markdown pages embed two variants of every architecture diagram:
+ *
+ *   ![Architecture](images/sdk-architecture.svg#only-light)
+ *   ![Architecture](images/sdk-architecture-dark.svg#only-dark)
+ *
+ * The URL fragment is a CSS selector hook; browsers ignore it when fetching
+ * the image, so both variants still load but only one is displayed.
+ */
+
+[data-md-color-scheme="default"] img[src$="#only-dark"] {
+  display: none;
+}
+
+[data-md-color-scheme="slate"] img[src$="#only-light"] {
+  display: none;
+}

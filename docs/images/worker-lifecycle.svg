@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 680" width="1200" height="680">
+  <rect width="1200" height="680" rx="12" fill="#ffffff"/>
+  <text x="40" y="54" font-family="Inter, system-ui, sans-serif" font-size="28" font-weight="700" fill="#1e1e26">SDK worker lifecycle</text>
+  <text x="40" y="82" font-family="Inter, system-ui, sans-serif" font-size="14" fill="#666666">The base worker handles the protocol loop; application code implements process.</text>
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 6" refX="10" refY="3" markerWidth="9" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 3 L 0 6 z" fill="#666666"/>
+    </marker>
+  </defs>
+
+  <rect x="60" y="150" width="180" height="75" rx="10" fill="#dae8fc" stroke="#6c8ebf" stroke-width="2"/>
+  <text x="150" y="181" font-family="Inter, system-ui, sans-serif" font-size="15" font-weight="700" text-anchor="middle" fill="#1e1e26">1. receive</text>
+  <text x="150" y="204" font-family="Inter, system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#333333">transport bytes</text>
+
+  <rect x="300" y="150" width="180" height="75" rx="10" fill="#dae8fc" stroke="#6c8ebf" stroke-width="2"/>
+  <text x="390" y="181" font-family="Inter, system-ui, sans-serif" font-size="15" font-weight="700" text-anchor="middle" fill="#1e1e26">2. decode</text>
+  <text x="390" y="204" font-family="Inter, system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#333333">TaskMessage</text>
+
+  <rect x="540" y="150" width="180" height="75" rx="10" fill="#fff2cc" stroke="#d6b656" stroke-width="2"/>
+  <text x="630" y="181" font-family="Inter, system-ui, sans-serif" font-size="15" font-weight="700" text-anchor="middle" fill="#1e1e26">3. validate</text>
+  <text x="630" y="204" font-family="Inter, system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#333333">input schema</text>
+
+  <rect x="780" y="150" width="180" height="75" rx="10" fill="#d5e8d4" stroke="#82b366" stroke-width="2"/>
+  <text x="870" y="181" font-family="Inter, system-ui, sans-serif" font-size="15" font-weight="700" text-anchor="middle" fill="#1e1e26">4. process</text>
+  <text x="870" y="204" font-family="Inter, system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#333333">native payload</text>
+
+  <rect x="780" y="335" width="180" height="75" rx="10" fill="#fff2cc" stroke="#d6b656" stroke-width="2"/>
+  <text x="870" y="366" font-family="Inter, system-ui, sans-serif" font-size="15" font-weight="700" text-anchor="middle" fill="#1e1e26">5. validate</text>
+  <text x="870" y="389" font-family="Inter, system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#333333">output object</text>
+
+  <rect x="540" y="335" width="180" height="75" rx="10" fill="#e1d5e7" stroke="#9673a6" stroke-width="2"/>
+  <text x="630" y="366" font-family="Inter, system-ui, sans-serif" font-size="15" font-weight="700" text-anchor="middle" fill="#1e1e26">6. publish</text>
+  <text x="630" y="389" font-family="Inter, system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#333333">TaskResult</text>
+
+  <rect x="300" y="335" width="180" height="75" rx="10" fill="#f8cecc" stroke="#b85450" stroke-width="2"/>
+  <text x="390" y="366" font-family="Inter, system-ui, sans-serif" font-size="15" font-weight="700" text-anchor="middle" fill="#1e1e26">7. reset</text>
+  <text x="390" y="389" font-family="Inter, system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#333333">before next task</text>
+
+  <rect x="295" y="500" width="205" height="75" rx="10" fill="#ffe6cc" stroke="#d79b00" stroke-width="2"/>
+  <text x="397" y="531" font-family="Inter, system-ui, sans-serif" font-size="15" font-weight="700" text-anchor="middle" fill="#1e1e26">malformed?</text>
+  <text x="397" y="554" font-family="Inter, system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#333333">call hook and continue</text>
+
+  <line x1="240" y1="187" x2="300" y2="187" stroke="#666666" stroke-width="2.4" marker-end="url(#arrow)"/>
+  <line x1="480" y1="187" x2="540" y2="187" stroke="#666666" stroke-width="2.4" marker-end="url(#arrow)"/>
+  <line x1="720" y1="187" x2="780" y2="187" stroke="#666666" stroke-width="2.4" marker-end="url(#arrow)"/>
+  <line x1="870" y1="225" x2="870" y2="335" stroke="#666666" stroke-width="2.4" marker-end="url(#arrow)"/>
+  <line x1="780" y1="372" x2="720" y2="372" stroke="#666666" stroke-width="2.4" marker-end="url(#arrow)"/>
+  <line x1="540" y1="372" x2="480" y2="372" stroke="#666666" stroke-width="2.4" marker-end="url(#arrow)"/>
+  <line x1="390" y1="335" x2="390" y2="225" stroke="#666666" stroke-width="2.4" marker-end="url(#arrow)"/>
+  <line x1="390" y1="225" x2="397" y2="500" stroke="#666666" stroke-width="2" stroke-dasharray="6 6" marker-end="url(#arrow)"/>
+  <line x1="295" y1="537" x2="150" y2="225" stroke="#666666" stroke-width="2" stroke-dasharray="6 6" marker-end="url(#arrow)"/>
+
+  <text x="60" y="625" font-family="Inter, system-ui, sans-serif" font-size="13" fill="#666666">Failures become TaskResult(status=failed); malformed messages are skipped and logged.</text>
+</svg>
