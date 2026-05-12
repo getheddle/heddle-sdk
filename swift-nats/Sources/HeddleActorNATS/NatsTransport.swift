@@ -1,5 +1,7 @@
 import Foundation
 import HeddleActor
+
+#if canImport(Nats)
 @preconcurrency import Nats
 
 public actor NatsTransport: HeddleTransport {
@@ -79,3 +81,29 @@ public actor NatsTransport: HeddleTransport {
         }
     }
 }
+#else
+public struct NatsTransportUnavailable: Error, Sendable {
+    public init() {}
+}
+
+public actor NatsTransport: HeddleTransport {
+    public init(url: URL = URL(string: "nats://localhost:4222")!) {}
+
+    public func connect() async throws {
+        throw NatsTransportUnavailable()
+    }
+
+    public func close() async throws {}
+
+    public func publish(subject: String, payload: Data) async throws {
+        throw NatsTransportUnavailable()
+    }
+
+    public func subscribe(
+        subject: String,
+        queueGroup: String? = nil
+    ) async throws -> AsyncThrowingStream<HeddleMessage, Error> {
+        throw NatsTransportUnavailable()
+    }
+}
+#endif

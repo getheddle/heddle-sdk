@@ -126,4 +126,5 @@ swift run --package-path examples/swift/echo-worker EchoWorker
 - `InMemoryTransport` is process-local. Use a shared broker transport for a
   native worker that needs to talk to a running Heddle or Workshop process.
 - `HeddleActorNATS` depends on the official `nats-io/nats.swift` package and
-  stays separate from the core Swift package.
+  stays separate from the core Swift package. The real NATS binding currently
+  builds on macOS, matching the official client's published platform support.

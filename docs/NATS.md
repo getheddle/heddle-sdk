@@ -83,17 +83,10 @@ try await transport.connect()
 try await EchoWorker().run(transport: transport)
 ```
 
-On Linux, the Swift NATS dependency chain uses libsodium for NKey support.
-Install the development headers before building:
-
-```bash
-sudo apt-get install libsodium-dev
-```
-
-The adapter package pins the transitive `swift-sodium` dependency to `0.9.1`
-because current Ubuntu LTS packages expose the stable libsodium APIs required by
-NKey signing, but not the newer AEGIS APIs compiled by later `swift-sodium`
-releases.
+The Swift adapter wraps the official `nats-io/nats.swift` client, which
+currently publishes Apple-platform targets. CI builds the real adapter on macOS;
+Linux workers should use `InMemoryTransport` for workshop-local testing until
+the official Swift client grows Linux support.
 
 ## Subject contract
 
