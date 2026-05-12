@@ -76,6 +76,7 @@ nav:
     - Overview: ARCHITECTURE.md
   - Development:
     - Adding a Language SDK: PORTING.md
+    - Publishing Packages: PUBLISHING.md
     - Roadmap: ROADMAP.md
     - Contract Evolution: CONTRACT_EVOLUTION.md
     - Contributing: CONTRIBUTING.md

@@ -8,3 +8,4 @@ TestResults/
 site/
 .venv/
 __pycache__/
+artifacts/

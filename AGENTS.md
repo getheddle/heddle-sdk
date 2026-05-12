@@ -17,6 +17,7 @@ the same documentation quality bar.
 - `docs/ARCHITECTURE.md` — SDK module map and relationship to Heddle.
 - `docs/CONCEPTS.md` — protocol concepts in plain language.
 - `docs/PORTING.md` — checklist for adding JVM or another language SDK.
+- `docs/PUBLISHING.md` — NuGet and SwiftPM release readiness checklist.
 - `docs/ROADMAP.md` — planned schema, publishing, and JVM work.
 - `docs/CONTRACT_EVOLUTION.md` — schema sync and migration policy.
 - `docs/CODING_GUIDE.md` — language-specific style and docs standards.
@@ -50,6 +51,8 @@ dotnet build dotnet/src/Heddle.Sdk/Heddle.Sdk.csproj
 dotnet test dotnet/tests/Heddle.Sdk.Tests/Heddle.Sdk.Tests.csproj
 dotnet build dotnet/src/Heddle.Sdk.Nats/Heddle.Sdk.Nats.csproj
 dotnet build examples/dotnet/EchoWorker/EchoWorker.csproj
+swift package dump-package
+swift build
 swift build --package-path swift
 swift test --package-path swift
 swift build --package-path swift-nats
@@ -77,6 +80,7 @@ then regenerates dark variants.
 schemas/v1/              Copied canonical JSON Schemas from heddle
 schemas/manifest.json    Upstream schema commit and schema file hashes
 tools/sync_schemas.py    Schema sync and manifest check tool
+Package.swift            Root SwiftPM publication surface
 dotnet/src/Heddle.Sdk/   .NET contract models and worker base
 dotnet/src/Heddle.Sdk.Nats/
                          .NET NATS transport adapter

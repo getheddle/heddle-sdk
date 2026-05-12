@@ -30,7 +30,7 @@ likely to drift from `getheddle/heddle`.
 | Swift NATS | Real `nats-io/nats.swift` binding builds on macOS; Linux builds package surface only |
 | Docs site | MkDocs site with language guides, NATS docs, Workshop compatibility, and draw.io-generated diagrams |
 | Schema sync | Manifest and sync/check tooling in place |
-| Package publishing | Planned |
+| Package publishing | First readiness pass in place |
 | Language porting guide | First draft in place |
 | JVM SDK | Planned |
 
@@ -84,14 +84,17 @@ Exit criteria:
 
 Goal: make .NET and Swift releasable through standard ecosystem tooling.
 
+Status: first readiness pass added root SwiftPM publication manifest,
+NuGet package metadata, `dotnet pack` CI verification, and
+`docs/PUBLISHING.md`.
+
 Deliverables:
 
 - Add .NET `dotnet pack` verification in CI for `Heddle.Sdk` and
   `Heddle.Sdk.Nats`.
 - Add package README metadata, tags, SourceLink, symbol package settings, and a
   NuGet release checklist.
-- Decide Swift package shape: root package manifest in this repo, or split
-  Swift packages into their own publication repo before Swift Package Index.
+- Use a root package manifest in this repo as the SwiftPM publication surface.
 - Add a Swift release checklist covering SemVer tags, package identity,
   supported platforms, and Swift Package Index compatibility.
 - Document release versioning, prerelease channels, and package ownership.

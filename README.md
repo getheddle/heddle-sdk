@@ -59,6 +59,7 @@ Start with:
 | [.NET SDK](docs/DOTNET.md) | Implement a C# / .NET processor worker |
 | [Architecture](docs/ARCHITECTURE.md) | Repository layout and worker lifecycle |
 | [Adding a Language SDK](docs/PORTING.md) | Porting checklist for JVM and future languages |
+| [Publishing Packages](docs/PUBLISHING.md) | NuGet and SwiftPM release readiness checklist |
 | [Roadmap](docs/ROADMAP.md) | Planned schema, publishing, and JVM work |
 | [Contract Evolution](docs/CONTRACT_EVOLUTION.md) | Schema sync and client migration policy |
 | [Contributing](docs/CONTRIBUTING.md) | Contribution boundaries and verification |
@@ -75,6 +76,7 @@ uvx --from mkdocs --with mkdocs-material mkdocs build --strict
 schemas/v1/              Canonical Heddle wire schemas copied from heddle
 schemas/manifest.json    Upstream schema commit and file hashes
 tools/sync_schemas.py    Local schema sync and manifest check tool
+Package.swift            Root SwiftPM publication surface
 dotnet/src/Heddle.Sdk/   .NET SDK package
 dotnet/tests/            .NET SDK regression tests
 dotnet/src/Heddle.Sdk.Nats/

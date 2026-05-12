@@ -11,11 +11,21 @@
     <Authors>Heddle</Authors>
     <Description>NATS transport adapter for Heddle .NET processor workers.</Description>
     <PackageLicenseExpression>MPL-2.0</PackageLicenseExpression>
+    <PackageProjectUrl>https://getheddle.github.io/heddle-sdk/</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>heddle;actors;worker;nats;transport;orchestration;sdk</PackageTags>
+    <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/getheddle/heddle-sdk</RepositoryUrl>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="../../../README.md" Pack="true" PackagePath="" />
     <ProjectReference Include="../Heddle.Sdk/Heddle.Sdk.csproj" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="all" />
     <PackageReference Include="NATS.Client.Core" Version="2.7.3" />
   </ItemGroup>
 </Project>
