@@ -54,6 +54,9 @@ swift run --package-path examples/swift/echo-worker EchoWorker
 | [.NET SDK](DOTNET.md) | You are implementing a C# / .NET processor worker. |
 | [Examples](EXAMPLES.md) | You want copyable worker skeletons. |
 | [Architecture](ARCHITECTURE.md) | You need the repo map and lifecycle. |
+| [Adding a Language SDK](PORTING.md) | You are adding JVM or another language runtime. |
+| [Roadmap](ROADMAP.md) | You want the planned sequence for schema, publishing, and JVM work. |
+| [Contract Evolution](CONTRACT_EVOLUTION.md) | You need schema sync and client migration rules. |
 | [Contributing](CONTRIBUTING.md) | You are opening a PR. |
 | [Coding Guide](CODING_GUIDE.md) | You are changing SDK code or docs. |
 
@@ -68,4 +71,5 @@ canonical SDK-facing protocol page is
 
 This repository owns language-specific SDK surfaces that mirror that contract.
 When upstream message models change, update `heddle` first, export schemas
-there, copy `schemas/v1` here, then update the .NET and Swift wrappers.
+there, sync `schemas/v1` here with `tools/sync_schemas.py`, then update the
+.NET and Swift wrappers.

@@ -58,6 +58,9 @@ Start with:
 | [Swift SDK](docs/SWIFT.md) | Implement a Swift processor worker |
 | [.NET SDK](docs/DOTNET.md) | Implement a C# / .NET processor worker |
 | [Architecture](docs/ARCHITECTURE.md) | Repository layout and worker lifecycle |
+| [Adding a Language SDK](docs/PORTING.md) | Porting checklist for JVM and future languages |
+| [Roadmap](docs/ROADMAP.md) | Planned schema, publishing, and JVM work |
+| [Contract Evolution](docs/CONTRACT_EVOLUTION.md) | Schema sync and client migration policy |
 | [Contributing](docs/CONTRIBUTING.md) | Contribution boundaries and verification |
 
 Build the docs locally:
@@ -70,6 +73,8 @@ uvx --from mkdocs --with mkdocs-material mkdocs build --strict
 
 ```text
 schemas/v1/              Canonical Heddle wire schemas copied from heddle
+schemas/manifest.json    Upstream schema commit and file hashes
+tools/sync_schemas.py    Local schema sync and manifest check tool
 dotnet/src/Heddle.Sdk/   .NET SDK package
 dotnet/tests/            .NET SDK regression tests
 dotnet/src/Heddle.Sdk.Nats/
@@ -95,7 +100,10 @@ The bus protocol is intentionally small:
 - Trace context, when present, rides as top-level `_trace_context`.
 
 The Python repository remains the source of truth. When the Pydantic models
-change there, run its schema export, then copy the updated files here.
+change there, run its schema export, then sync the updated files here.
+Use `python tools/sync_schemas.py --update --upstream ../heddle` to sync from a
+local upstream checkout, and `python tools/sync_schemas.py --check` to verify
+the vendored schema manifest.
 For the broader runtime documentation, see
 [getheddle.github.io/heddle](https://getheddle.github.io/heddle/).
 

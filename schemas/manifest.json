@@ -1,0 +1,22 @@
+{
+  "schema_version": "v1",
+  "schemas": {
+    "checkpoint_state.schema.json": {
+      "sha256": "78617e142e7c77e103ea84f9611e5bdfd622f696ec1a103df5e5bfa88270d073"
+    },
+    "orchestrator_goal.schema.json": {
+      "sha256": "d4a8eadd4c6d00653acf1af86034c85f43fcaf5c63c73650c8453720280e7aaa"
+    },
+    "task_message.schema.json": {
+      "sha256": "18ad03021c17d7bf295343f4a1ed658de4abe5cab68cafd5e65c8a3457f0c1c8"
+    },
+    "task_result.schema.json": {
+      "sha256": "caebdaec2e84a7dda236d24c78cfd85a25128d819678ab84879c42970ae5eaac"
+    }
+  },
+  "source": {
+    "commit": "8f16028ecca6d109255be70a3d5acab02d7ed938",
+    "path": "schemas/v1",
+    "repository": "getheddle/heddle"
+  }
+}

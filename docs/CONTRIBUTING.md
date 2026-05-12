@@ -30,6 +30,7 @@ Out of scope unless coordinated with upstream Heddle:
 Run:
 
 ```bash
+python tools/sync_schemas.py --check
 dotnet build dotnet/src/Heddle.Sdk/Heddle.Sdk.csproj
 dotnet test dotnet/tests/Heddle.Sdk.Tests/Heddle.Sdk.Tests.csproj
 dotnet build dotnet/src/Heddle.Sdk.Nats/Heddle.Sdk.Nats.csproj
@@ -44,8 +45,18 @@ uvx --from mkdocs --with mkdocs-material mkdocs build --strict
 For docs diagrams, edit `.drawio` sources under `docs/diagrams/`. CI exports
 SVGs to `docs/images/` and generates dark variants.
 
+When upstream Heddle message schemas change, sync from a local sibling checkout:
+
+```bash
+python tools/sync_schemas.py --update --upstream ../heddle
+```
+
+Then update language models, examples, and docs according to
+[Contract Evolution](CONTRACT_EVOLUTION.md).
+
 ## AI-assisted development
 
-`AGENTS.md` and `CLAUDE.md` document the project rules for AI-assisted work.
+`AGENTS.md` documents the shared project rules for AI-assisted work.
+`CLAUDE.md` is only a Claude-specific pointer back to those rules.
 AI-generated code is reviewed under the same standards as human-authored code:
 wire compatibility, language parity, tests, and documentation.

@@ -100,7 +100,8 @@ When the upstream Pydantic models change, this repository should change in the
 same commit or release train:
 
 1. Export schemas in `heddle`.
-2. Copy updated schemas into `heddle-sdk/schemas/v1`.
+2. Sync updated schemas with
+   `python tools/sync_schemas.py --update --upstream ../heddle`.
 3. Update .NET and Swift typed wrappers.
 4. Update examples and docs.
 5. Run SDK CI.

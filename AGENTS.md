@@ -13,9 +13,12 @@ the same documentation quality bar.
 
 ## Read first
 
-- `CLAUDE.md` — compact architecture and agent guidance.
+- `CLAUDE.md` — Claude-specific pointer to this file.
 - `docs/ARCHITECTURE.md` — SDK module map and relationship to Heddle.
 - `docs/CONCEPTS.md` — protocol concepts in plain language.
+- `docs/PORTING.md` — checklist for adding JVM or another language SDK.
+- `docs/ROADMAP.md` — planned schema, publishing, and JVM work.
+- `docs/CONTRACT_EVOLUTION.md` — schema sync and migration policy.
 - `docs/CODING_GUIDE.md` — language-specific style and docs standards.
 - `docs/CONTRIBUTING.md` — contribution boundaries and review expectations.
 - `../heddle/docs/foreign-actors.md` — canonical foreign-actor wire protocol.
@@ -24,7 +27,8 @@ the same documentation quality bar.
 ## Non-negotiable rules
 
 - **Do not invent a second protocol.** `schemas/v1/*.schema.json` are copied
-  from `getheddle/heddle` and represent the wire contract.
+  from `getheddle/heddle` and represent the wire contract. Use
+  `tools/sync_schemas.py` to update or verify the copied files.
 - **Workers are stateless.** SDK worker bases must reset between tasks and must
   not encourage per-process task memory.
 - **Transport stays abstract in core packages.** NATS adapters can live beside
@@ -41,6 +45,7 @@ the same documentation quality bar.
 ## Verification commands
 
 ```bash
+python tools/sync_schemas.py --check
 dotnet build dotnet/src/Heddle.Sdk/Heddle.Sdk.csproj
 dotnet test dotnet/tests/Heddle.Sdk.Tests/Heddle.Sdk.Tests.csproj
 dotnet build dotnet/src/Heddle.Sdk.Nats/Heddle.Sdk.Nats.csproj
@@ -70,6 +75,8 @@ then regenerates dark variants.
 
 ```text
 schemas/v1/              Copied canonical JSON Schemas from heddle
+schemas/manifest.json    Upstream schema commit and schema file hashes
+tools/sync_schemas.py    Schema sync and manifest check tool
 dotnet/src/Heddle.Sdk/   .NET contract models and worker base
 dotnet/src/Heddle.Sdk.Nats/
                          .NET NATS transport adapter
