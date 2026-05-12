@@ -22,7 +22,8 @@ The upstream wire-protocol reference is
 - Swift `Codable` contract models, subject helpers, shallow schema validation,
   and a transport-agnostic worker base with an in-memory transport for local
   runs.
-- Separate NATS transport adapters for .NET and Swift live-runtime interop.
+- NATS transport adapters: .NET for live-runtime interop, plus a Swift adapter
+  that builds the real `nats-io/nats.swift` binding on macOS.
 - Runnable .NET and Swift echo-worker examples.
 - A MkDocs documentation site with source-controlled draw.io diagrams.
 
@@ -75,6 +76,7 @@ dotnet/src/Heddle.Sdk.Nats/
                          .NET NATS transport adapter
 swift/                   SwiftPM package
 swift-nats/              SwiftPM NATS transport adapter
+                         Real NATS binding on macOS; Linux builds package surface
 examples/                Runnable .NET and Swift workers
 docs/                    MkDocs site
 docs/diagrams/           draw.io diagram sources

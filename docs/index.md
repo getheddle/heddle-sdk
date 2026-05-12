@@ -16,13 +16,15 @@ the same Heddle bus as Python workers.
 |------|--------------|
 | Wire schemas | Copied `schemas/v1/*.schema.json` from `getheddle/heddle` |
 | .NET | `Heddle.Sdk` core plus `Heddle.Sdk.Nats` adapter |
-| Swift | `HeddleActor` core plus `HeddleActorNATS` adapter |
+| Swift | `HeddleActor` core plus `HeddleActorNATS` adapter; real NATS binding currently builds on macOS |
 | Examples | Runnable .NET and Swift echo workers using the SDK in-memory transports |
 | Docs | Protocol concepts, architecture, language guides, and contribution standards |
 
 The first layer is deliberately transport-agnostic. Local examples use the
 SDK-native in-memory transports; live Heddle and Workshop interop across
-processes should use a shared broker such as NATS.
+processes should use a shared broker such as NATS. The .NET NATS adapter is
+available for live interop today. The Swift NATS adapter wraps the official
+`nats-io/nats.swift` client and currently builds the real binding on macOS.
 
 ## Quick start
 

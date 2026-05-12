@@ -1,15 +1,17 @@
 # NATS Transports
 
 The core SDK packages stay broker-neutral. Use the NATS adapter packages when a
-.NET or Swift worker needs to join a live Heddle bus, Workshop session, router,
-or orchestrator.
+native worker needs to join a live Heddle bus, Workshop session, router, or
+orchestrator. The .NET adapter is live-runtime ready today. The Swift adapter
+wraps the official `nats-io/nats.swift` client and currently builds the real
+binding on macOS.
 
 ## Packages
 
-| Language | Core package | NATS adapter | Official client |
-|----------|--------------|--------------|-----------------|
-| .NET | `Heddle.Sdk` | `Heddle.Sdk.Nats` | `NATS.Client.Core` |
-| Swift | `HeddleActor` | `HeddleActorNATS` | `nats-io/nats.swift` |
+| Language | Core package | NATS adapter | Official client | Current status |
+|----------|--------------|--------------|-----------------|----------------|
+| .NET | `Heddle.Sdk` | `Heddle.Sdk.Nats` | `NATS.Client.Core` | Live-runtime ready |
+| Swift | `HeddleActor` | `HeddleActorNATS` | `nats-io/nats.swift` | Real binding on macOS; Linux package surface only |
 
 The worker subclass does not change when switching from in-memory to NATS.
 Only the transport construction changes.

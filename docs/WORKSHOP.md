@@ -17,7 +17,8 @@ The SDK in-memory transports are the matching local-development shape:
 |----------|-----------|
 | Unit tests and examples | `InMemoryHeddleTransport` / `InMemoryTransport` |
 | Workshop running fully in Python in one process | Heddle `InMemoryBus` |
-| External .NET or Swift worker with live Workshop | `Heddle.Sdk.Nats` / `HeddleActorNATS` |
+| External .NET worker with live Workshop | `Heddle.Sdk.Nats` |
+| External Swift worker with live Workshop | `HeddleActorNATS` on macOS; Linux Swift workers should stay in-memory until upstream `nats-io/nats.swift` publishes Linux support |
 
 The in-memory transports intentionally match Heddle's local bus behavior:
 
@@ -49,7 +50,9 @@ dependency-free while still exercising the production worker loop.
 ## Live Workshop interop
 
 For a native worker to participate in a running Workshop or Heddle runtime, run
-both sides against the same broker. The subject contract does not change:
+both sides against the same broker. The .NET adapter is ready for that path
+today; the Swift adapter has a real macOS binding and a Linux-safe package
+surface. The subject contract does not change:
 
 - subscribe to `heddle.tasks.{worker_type}.{tier}`
 - use queue group `processors-{worker_type}`

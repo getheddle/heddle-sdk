@@ -28,7 +28,7 @@ Replace the in-memory transport with a broker-backed transport:
 | Example mode | Live runtime mode |
 |--------------|-------------------|
 | Build a `TaskMessage` in `main` | Receive `TaskMessage` from the Heddle router |
-| Use `InMemoryHeddleTransport` / `InMemoryTransport` | Use a shared broker transport, usually NATS |
+| Use `InMemoryHeddleTransport` / `InMemoryTransport` | Use a shared broker transport, usually NATS. The shipped .NET NATS adapter is live-runtime ready; the shipped Swift NATS adapter builds the real binding on macOS. |
 | Call `RunAsync(...)` / `run(transport:)` | Keep the same worker run-loop call |
 | Print the result from a local subscriber | Publish to `heddle.results.{parent_task_id}` |
 

@@ -22,6 +22,9 @@ dotnet build dotnet/src/Heddle.Sdk.Nats/Heddle.Sdk.Nats.csproj
 swift build --package-path swift-nats
 ```
 
+`swift-nats` builds a Linux-safe package surface everywhere, and builds the
+real `nats-io/nats.swift` transport binding on macOS.
+
 ## Run the SDK tests
 
 ```bash

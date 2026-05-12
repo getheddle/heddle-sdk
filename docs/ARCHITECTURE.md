@@ -58,7 +58,7 @@ examples/
 | Validation | Shallow JSON Schema boundary checks matching Heddle's runtime behavior. |
 | Worker base | Decode, validate, process, encode, publish, reset. |
 | Core transports | Small publish/subscribe interface plus in-memory test transport. |
-| NATS adapters | Separate packages that connect the same worker loop to NATS Core. |
+| NATS adapters | Separate packages that connect the same worker loop to NATS Core. The .NET adapter is live-runtime ready; the Swift adapter builds the real binding on macOS. |
 
 ## Worker lifecycle
 
@@ -79,12 +79,14 @@ the failure.
 
 The in-memory transports are same-process harnesses for tests, examples, and
 Workshop-style local development. They mirror Heddle's `InMemoryBus` queue-group
-behavior, but they do not create an IPC endpoint. A Swift or .NET process that
-needs to participate in a live Heddle or Workshop runtime should use a shared
-broker transport, usually NATS.
+behavior, but they do not create an IPC endpoint. A .NET process or macOS Swift
+process that needs to participate in a live Heddle or Workshop runtime should
+use a shared broker transport, usually NATS.
 
 The NATS adapters live in separate packages so core SDK consumers can build and
-test without pulling broker-client dependencies.
+test without pulling broker-client dependencies. On Linux, the Swift NATS
+package currently exposes a buildable package surface while waiting for the
+official `nats-io/nats.swift` client to publish Linux support.
 
 ## Compatibility contract
 
