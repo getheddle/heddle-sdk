@@ -129,3 +129,9 @@ Before committing:
 - For non-trivial work: did you spawn `heddle-architect` first?
 - For seam diffs: did you spawn `heddle-contract-reviewer` to verify the
   cross-language coherence?
+- **Does this commit add, change, deprecate, remove, or fix
+  user-facing behaviour?** If yes, add an entry under `[Unreleased]` in
+  [`CHANGELOG.md`](CHANGELOG.md) (Added / Changed / Deprecated /
+  Removed / Fixed / Security). Documentation-only changes, internal
+  refactors with no behavioural delta, and CI/build adjustments are
+  exempt.

@@ -61,6 +61,15 @@ uvx --from mkdocs --with mkdocs-material mkdocs build --strict
 For docs diagrams, edit `.drawio` sources under `docs/diagrams/`. CI exports
 SVGs to `docs/images/` and generates dark variants.
 
+If your change adds, changes, deprecates, removes, or fixes
+user-facing behaviour in either the .NET or Swift surfaces (or in
+wire-contract handling), **add an entry under `[Unreleased]` in
+[`CHANGELOG.md`](https://github.com/getheddle/heddle-sdk/blob/main/CHANGELOG.md)**
+under the appropriate section (`Added` / `Changed` / `Deprecated` /
+`Removed` / `Fixed` / `Security`). Documentation-only changes,
+internal refactors with no behavioural delta, and CI/build
+adjustments are exempt.
+
 When upstream Heddle message schemas change, sync from a local sibling checkout:
 
 ```bash
