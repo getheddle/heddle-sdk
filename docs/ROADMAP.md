@@ -160,7 +160,8 @@ Exit criteria:
 - Should Swift remain in this combined repo for publication, or move to a
   Swift-first repo once the API stabilizes?
 - Should `_trace_context` become part of upstream exported schemas, or remain a
-  documented envelope extension preserved by SDKs?
+  documented envelope extension preserved by SDKs? (See
+  [Contract Evolution → Trace context](CONTRACT_EVOLUTION.md#trace-context).)
 - Should enum decoding become forward-compatible in all SDKs before the first
   public prerelease?
 - What is the first JVM publication target: JVM-only, Android-compatible JVM,

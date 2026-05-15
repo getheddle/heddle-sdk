@@ -84,9 +84,9 @@ process that needs to participate in a live Heddle or Workshop runtime should
 use a shared broker transport, usually NATS.
 
 The NATS adapters live in separate packages so core SDK consumers can build and
-test without pulling broker-client dependencies. On Linux, the Swift NATS
-package currently exposes a buildable package surface while waiting for the
-official `nats-io/nats.swift` client to publish Linux support.
+test without pulling broker-client dependencies. See
+[NATS Transports](NATS.md) for the current platform support matrix and
+runtime details.
 
 ## Compatibility contract
 

@@ -44,9 +44,11 @@ Never hand-author a different contract.
 
 4. Follow [Contract Evolution](CONTRACT_EVOLUTION.md) for migration rules.
 
-The current SDKs include `_trace_context` as a documented top-level envelope
-extension even though it is not yet in the exported schemas. New SDKs should
-preserve it when present and include it on `TaskResult`.
+New SDKs must preserve `_trace_context` when present and include it on
+`TaskResult`. See
+[Contract Evolution → Trace context](CONTRACT_EVOLUTION.md#trace-context)
+for the full rule (it's a documented envelope extension, not yet in the
+exported schemas).
 
 ## Model rules
 

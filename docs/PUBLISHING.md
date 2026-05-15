@@ -34,12 +34,10 @@ swift build --package-path examples/swift/echo-worker
 uvx --from mkdocs --with mkdocs-material mkdocs build --strict
 ```
 
-On macOS Command Line Tools installations where C++ headers are not found, run:
-
-```bash
-export CPLUS_INCLUDE_PATH="$(xcrun --show-sdk-path)/usr/include/c++/v1${CPLUS_INCLUDE_PATH:+:$CPLUS_INCLUDE_PATH}"
-swift build --package-path swift-nats
-```
+On macOS Command Line Tools installations where C++ headers are not
+found, see
+[Coding Guide → macOS C++ header setup](CODING_GUIDE.md#macos-c-header-setup)
+for the diagnosis and workaround.
 
 ## NuGet
 
