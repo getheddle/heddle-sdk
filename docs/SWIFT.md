@@ -21,10 +21,18 @@ dependencies: [
 ]
 ```
 
-Use the `HeddleActor` product:
+Use the `HeddleActor` product. The `package:` identifier depends on
+which dependency form you used: the repo slug `heddle-sdk` for the Git
+URL form above, or the directory name `swift` for a local-path form
+(`.package(path: "../../swift")`, as used in
+`examples/swift/echo-worker/Package.swift`).
 
 ```swift
+// Git-URL consumption (matches the dependency block above):
 .product(name: "HeddleActor", package: "heddle-sdk")
+
+// Local-path consumption (for in-repo development):
+// .product(name: "HeddleActor", package: "swift")
 ```
 
 ## Define payload and output types

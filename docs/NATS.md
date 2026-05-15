@@ -69,10 +69,16 @@ dependencies: [
 ]
 ```
 
-Use the product:
+Use the product. When consuming via the local path above, the `package:`
+identifier is the directory name (`swift-nats`). When consuming via the
+Git URL form (see SWIFT.md), it is the repo slug (`heddle-sdk`).
 
 ```swift
-.product(name: "HeddleActorNATS", package: "HeddleActorNATS")
+// Local-path consumption (matches the dependency block above):
+.product(name: "HeddleActorNATS", package: "swift-nats")
+
+// Git-URL consumption:
+// .product(name: "HeddleActorNATS", package: "heddle-sdk")
 ```
 
 Run the worker:

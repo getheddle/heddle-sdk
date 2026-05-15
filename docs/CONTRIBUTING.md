@@ -9,6 +9,18 @@ changes:
 - <https://github.com/getheddle/heddle/blob/main/docs/DESIGN_INVARIANTS.md>
 - <https://github.com/getheddle/heddle/blob/main/docs/foreign-actors.md>
 
+Cross-repo invariants and the wire-protocol contract map live in the
+sibling
+[`heddle-agent-toolkit`](https://github.com/getheddle/heddle-agent-toolkit)
+repo. The toolkit's `anchors/INVARIANTS.md` defines C1–C7 — schema
+source of truth, byte-identical subject names, statelessness, processor-
+not-LLM scope, transport abstraction, language parity, and
+warp-design-proposes-only. The toolkit's `anchors/CONTRACT_MAP.md` is
+the canonical reference for subjects, queue groups, and schema sync
+direction. Clone the toolkit as a sibling and run its `install.sh` to
+also populate this repo's `.claude/` with the shared skills and
+subagents.
+
 ## Contribution boundaries
 
 Good SDK contributions:
