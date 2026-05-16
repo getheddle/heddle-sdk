@@ -18,6 +18,16 @@ here as `Unreleased` until the first NuGet and SwiftPM tag.
 
 ### Added
 
+- Swift `CheckpointState` struct in
+  `swift/Sources/HeddleActor/Models.swift`, mirroring the existing
+  `.NET` `Heddle.Sdk.CheckpointState` record. Closes the C6
+  (language parity) gap surfaced by the 2026-05-15 invariant audit:
+  the JSON Schema and the .NET model have shipped `CheckpointState`
+  for a while; Swift was missing it. Field types follow the
+  established Swift conventions in this file
+  (`completed_tasks` / `pending_tasks` → `[[String: JSONValue]]`;
+  `created_at` defaulted via `HeddleClock.nowIso8601()` to match
+  the .NET pattern). `swift build` + `swift test` clean.
 - .NET contract models, subject helpers, shallow schema validation,
   and a transport-agnostic worker loop with an in-memory transport.
 - Swift `Codable` contract models, subject helpers, shallow schema

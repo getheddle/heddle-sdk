@@ -146,6 +146,56 @@ public struct OrchestratorGoal: Codable, Equatable, Sendable {
     }
 }
 
+public struct CheckpointState: Codable, Equatable, Sendable {
+    public var goalId: String
+    public var originalInstruction: String
+    public var executiveSummary: String
+    public var completedTasks: [[String: JSONValue]]
+    public var pendingTasks: [[String: JSONValue]]
+    public var openIssues: [String]
+    public var decisionsMade: [String]
+    public var contextTokenCount: Int
+    public var checkpointNumber: Int
+    public var createdAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case goalId = "goal_id"
+        case originalInstruction = "original_instruction"
+        case executiveSummary = "executive_summary"
+        case completedTasks = "completed_tasks"
+        case pendingTasks = "pending_tasks"
+        case openIssues = "open_issues"
+        case decisionsMade = "decisions_made"
+        case contextTokenCount = "context_token_count"
+        case checkpointNumber = "checkpoint_number"
+        case createdAt = "created_at"
+    }
+
+    public init(
+        goalId: String = "",
+        originalInstruction: String = "",
+        executiveSummary: String = "",
+        completedTasks: [[String: JSONValue]] = [],
+        pendingTasks: [[String: JSONValue]] = [],
+        openIssues: [String] = [],
+        decisionsMade: [String] = [],
+        contextTokenCount: Int = 0,
+        checkpointNumber: Int = 0,
+        createdAt: String = HeddleClock.nowIso8601()
+    ) {
+        self.goalId = goalId
+        self.originalInstruction = originalInstruction
+        self.executiveSummary = executiveSummary
+        self.completedTasks = completedTasks
+        self.pendingTasks = pendingTasks
+        self.openIssues = openIssues
+        self.decisionsMade = decisionsMade
+        self.contextTokenCount = contextTokenCount
+        self.checkpointNumber = checkpointNumber
+        self.createdAt = createdAt
+    }
+}
+
 public struct WorkerOutput<Output: Encodable & Sendable>: Sendable {
     public var output: Output
     public var modelUsed: String?
