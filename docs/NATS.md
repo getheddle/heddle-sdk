@@ -94,7 +94,9 @@ try await EchoWorker().run(transport: transport)
 The Swift adapter wraps the official `nats-io/nats.swift` client, which
 currently publishes Apple-platform targets. CI builds the real adapter on macOS;
 Linux workers should use `InMemoryTransport` for workshop-local testing until
-the official Swift client grows Linux support.
+the official Swift client grows Linux support. Even on Linux, resolving the
+adapter package currently requires a Swift 6.2+ toolchain because transitive
+`nats.swift` dependencies publish Swift tools 6.2 manifests.
 
 ## Subject contract
 

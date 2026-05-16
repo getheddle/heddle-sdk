@@ -53,7 +53,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: swift-actions/setup-swift@v2
         with:
-          swift-version: "6.0"
+          # The root package resolves nats.swift for the NATS adapter surface.
+          # Its current transitive package graph includes Swift tools 6.2
+          # manifests, so Ubuntu CI must use a 6.2+ toolchain.
+          swift-version: "6.2"
       - name: Inspect root Swift package
         run: swift package dump-package
       - name: Build root Swift package surface

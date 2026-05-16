@@ -6,7 +6,7 @@ the examples.
 ## Prerequisites
 
 - .NET SDK 8 or newer
-- Swift 6 or newer
+- Swift 6.2 or newer for the full Swift/NATS package surface
 - Python 3.11+ only if you want to build the docs locally
 
 No NATS server is required for the checked-in examples. They use the SDK
@@ -23,7 +23,9 @@ swift build --package-path swift-nats
 ```
 
 `swift-nats` builds a Linux-safe package surface everywhere, and builds the
-real `nats-io/nats.swift` transport binding on macOS.
+real `nats-io/nats.swift` transport binding on macOS. The checked-in manifests
+remain Swift tools 6.0, but the current `nats.swift` dependency graph requires
+a Swift 6.2+ toolchain when resolving the NATS adapter packages.
 
 ## Run the SDK tests
 
