@@ -13,7 +13,7 @@ jobs:
   schema-sync:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
@@ -23,7 +23,7 @@ jobs:
   dotnet:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: "8.0.x"
@@ -40,7 +40,7 @@ jobs:
           dotnet pack dotnet/src/Heddle.Sdk/Heddle.Sdk.csproj --configuration Release --no-build --output artifacts/nuget
           dotnet pack dotnet/src/Heddle.Sdk.Nats/Heddle.Sdk.Nats.csproj --configuration Release --no-build --output artifacts/nuget
       - name: Upload NuGet package artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: nuget-packages
           path: |
@@ -50,7 +50,7 @@ jobs:
   swift:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: swift-actions/setup-swift@v2
         with:
           # The root package resolves nats.swift for the NATS adapter surface.
@@ -71,14 +71,14 @@ jobs:
   swift-nats-macos:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Build NATS adapter
         run: swift build --package-path swift-nats
 
   docs:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
