@@ -16,6 +16,40 @@ rule and `docs/CONTRIBUTING.md` for contributor-facing guidance.
 The SDK is pre-1.0 and pre-publication. All work to date is captured
 here as `Unreleased` until the first NuGet and SwiftPM tag.
 
+### Changed
+
+- `Models.cs` and `Models.swift` gain XML / DocC doc comments on
+  every public type. The doc comments explain what each envelope is,
+  when application code constructs vs receives it, the wire-protocol
+  relationship, and (for `WorkerOutput<T>`) an explicit
+  not-a-wire-type callout with the rationale. Mirrors the rationale
+  between languages so .NET and Swift readers see the same shape.
+  Resolves audit-question on `WorkerOutput<T>`
+  (`INVARIANT_AUDIT_2026-05-15.md` S1) via option (a): document as
+  SDK-ergonomic only, never serialised to bus. Investigation
+  confirmed: `HeddleWorker` base classes in both languages transform
+  `WorkerOutput` into the wire `TaskResult` envelope in
+  `HandleAsync` / `handle(_:)` — `WorkerOutput` never reaches the
+  bus directly. The previously-flagged .NET/Swift parity difference
+  on `Metadata` / `TokenUsage` nullability (.NET nullable +
+  null-default vs Swift non-optional + empty-default) is documented
+  as language-idiomatic and behaviourally equivalent — the base
+  class normalises both to the same wire shape, so C6 parity is
+  preserved at the wire level even though the type signatures
+  differ.
+- `HeddleWorker.cs` and `HeddleWorker.swift` gain doc comments on
+  the class, `ProcessAsync` / `process`, `ResetAsync` / `reset`, and
+  the malformed-message hooks. Documents the SDK-author boundary
+  explicitly: what you implement, what the base class handles for
+  you, what you do NOT do. C3 (stateless workers) and C5 (transport-
+  agnostic core) invariants surfaced as load-bearing rationale.
+- `docs/CONCEPTS.md` gains a new "Writing a worker — the SDK
+  author's API" section. Contrasts wire envelope (`TaskResult`,
+  serialised to bus) with SDK return type (`WorkerOutput`, never
+  serialised). Includes side-by-side .NET / Swift signatures, a
+  table of what the base class handles, and the minimum echo-worker
+  example in both languages.
+
 ### Added
 
 - Swift `CheckpointState` struct in

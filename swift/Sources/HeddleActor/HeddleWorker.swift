@@ -1,5 +1,68 @@
 import Foundation
 
+/// Transport-agnostic base class for foreign processor workers.
+/// Subclass, override `process(payload:metadata:)`, and call
+/// `run(transport:)` against any `HeddleTransport`.
+///
+/// ## What you implement
+///
+/// The `process(payload:metadata:)` method (overridden in your
+/// subclass — the base implementation calls `fatalError`). You
+/// receive a typed `Payload` deserialised from the inbound
+/// ``TaskMessage/payload``, plus the task's metadata dictionary. You
+/// return a ``WorkerOutput`` containing your typed domain output and
+/// optional metrics.
+///
+/// ## What the base class handles for you
+///
+/// - Subscribing to the right wire subject
+///   (`heddle.tasks.{worker_type}.{tier}`) with the right queue
+///   group (`processors-{worker_type}`).
+/// - Decoding inbound ``TaskMessage`` bytes and skipping malformed
+///   messages without crashing the subscription loop (calls
+///   ``malformedMessage(_:)`` for hooks).
+/// - Shallow JSON-Schema validation of the input payload against
+///   ``inputSchema``, if provided.
+/// - Deserialising the payload to `Payload`.
+/// - Calling `process(payload:metadata:)`.
+/// - Encoding the output and shallow-validating against
+///   ``outputSchema``, if provided.
+/// - Constructing the wire ``TaskResult`` envelope: copying routing
+///   fields from the inbound task (``TaskMessage/taskId``,
+///   ``TaskMessage/parentTaskId``, ``TaskMessage/workerType``),
+///   propagating ``TaskMessage/traceContext``, measuring elapsed
+///   time, pulling typed output + metrics from your
+///   ``WorkerOutput``.
+/// - Publishing the result to
+///   `heddle.results.{parent_task_id or "default"}`.
+/// - Calling ``reset()`` between tasks — workers are stateless in
+///   every language SDK (cross-repo invariant C3); the base class
+///   enforces this regardless of your subclass discipline.
+/// - Converting thrown errors during `process(payload:metadata:)`
+///   into ``TaskResult`` with ``TaskStatus/failed`` plus the error
+///   description. Processing failures never crash the worker; the
+///   subscription loop continues.
+///
+/// ## What you DON'T do
+///
+/// Construct ``TaskMessage`` or ``TaskResult`` directly, manage
+/// subscription lifecycles, emit trace spans (that's the OTel
+/// layer's job), or persist state between tasks (workers are
+/// stateless).
+///
+/// ## Transports
+///
+/// Ship as separate packages. `swift-nats` provides a live NATS
+/// adapter; `InMemoryTransport` is for tests and same-process
+/// examples. The base class is transport-agnostic by design
+/// (cross-repo invariant C5).
+///
+/// - Parameters:
+///   - Payload: The native type for the worker's input payload. Must
+///     be `Decodable` from the JSON object on `TaskMessage.payload`.
+///   - Output: The native type for the worker's output. Must
+///     `Encodable`-serialise to a JSON object (the base class checks
+///     this and fails the task with a clear error if not).
 open class HeddleWorker<Payload: Decodable & Sendable, Output: Encodable & Sendable>: @unchecked Sendable {
     public let workerType: String
     public let tier: String
@@ -26,6 +89,27 @@ open class HeddleWorker<Payload: Decodable & Sendable, Output: Encodable & Senda
         HeddleSubjects.processorQueueGroup(workerType: workerType)
     }
 
+    /// Implement this. Process one typed payload and return one typed
+    /// output (wrapped in ``WorkerOutput`` for optional metrics).
+    ///
+    /// - Parameters:
+    ///   - payload: The deserialised inbound payload. Has already
+    ///     passed shallow input-schema validation if ``inputSchema``
+    ///     was set.
+    ///   - metadata: Free-form per-task metadata attached by the
+    ///     producer (typically orchestrator-level routing hints,
+    ///     retry counters, etc.). Pass through or ignore.
+    /// - Returns: A ``WorkerOutput`` containing the typed domain
+    ///   output plus optional model / usage / metadata fields. The
+    ///   base class transforms this into the wire ``TaskResult``.
+    /// - Throws: Throw on processing failure. The base class converts
+    ///   thrown errors into ``TaskResult`` with ``TaskStatus/failed``
+    ///   and the error description; the subscription loop is
+    ///   unaffected. Do not catch errors just to swallow them —
+    ///   return-with-error is what the wire contract expects.
+    ///
+    /// The default implementation calls `fatalError`. Override in
+    /// every concrete worker subclass.
     open func process(
         payload: Payload,
         metadata: [String: JSONValue]
@@ -33,6 +117,14 @@ open class HeddleWorker<Payload: Decodable & Sendable, Output: Encodable & Senda
         fatalError("Subclasses must implement process(payload:metadata:)")
     }
 
+    /// Optional hook called between tasks to clear any state that
+    /// crept in during ``process(payload:metadata:)``. Workers are
+    /// stateless in every language SDK (cross-repo invariant C3);
+    /// override this if your subclass holds per-task scratch state
+    /// (caches, buffers) that must be reset.
+    ///
+    /// The base class calls this unconditionally after every task,
+    /// success or failure. Default implementation is a no-op.
     open func reset() async {}
 
     public func run(transport: HeddleTransport) async throws {
@@ -70,6 +162,14 @@ open class HeddleWorker<Payload: Decodable & Sendable, Output: Encodable & Senda
         return result
     }
 
+    /// Optional hook called when the inbound transport message can't
+    /// be decoded as a ``TaskMessage``. Override to log, emit a
+    /// metric, or report to a dead-letter sink.
+    ///
+    /// Malformed messages are skipped, not process-fatal — the
+    /// subscription loop continues. This mirrors Heddle's framework
+    /// invariant: a single bad message must not take down a worker
+    /// replica.
     open func malformedMessage(_ error: Error) async {}
 
     private func handleCore(_ task: TaskMessage) async throws -> TaskResult {
