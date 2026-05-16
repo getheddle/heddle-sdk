@@ -1,6 +1,6 @@
 site_name: Heddle SDK
 site_description: Language SDKs and actor-runtime helpers for Heddle foreign-language workers.
-site_url: https://getheddle.github.io/heddle-sdk/
+site_url: https://getheddle.dev/heddle-sdk/
 repo_url: https://github.com/getheddle/heddle-sdk
 repo_name: getheddle/heddle-sdk
 
@@ -71,7 +71,7 @@ nav:
     - Swift SDK: SWIFT.md
     - .NET SDK: DOTNET.md
     - Examples: EXAMPLES.md
-    - Heddle Runtime Docs: https://getheddle.github.io/heddle/
+    - Heddle Runtime Docs: https://getheddle.dev/heddle/
   - Architecture:
     - Overview: ARCHITECTURE.md
   - Development:

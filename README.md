@@ -5,14 +5,14 @@ Language SDKs and actor-runtime helpers for
 workers.
 
 [![CI](https://github.com/getheddle/heddle-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/getheddle/heddle-sdk/actions/workflows/ci.yml)
-[![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://getheddle.github.io/heddle-sdk/)
+[![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://getheddle.dev/heddle-sdk/)
 [![License: MPL 2.0](https://img.shields.io/badge/License-MPL_2.0-brightgreen.svg)](LICENSE)
 
 Heddle's Python repository owns the runtime framework and canonical wire
 schemas. This repository packages those contracts for other language
 ecosystems, starting with .NET and Swift.
 The upstream wire-protocol reference is
-[Foreign-Language Actors](https://getheddle.github.io/heddle/foreign-actors/).
+[Foreign-Language Actors](https://getheddle.dev/heddle/foreign-actors/).
 
 ## What ships
 
@@ -107,7 +107,7 @@ Use `python tools/sync_schemas.py --update --upstream ../heddle` to sync from a
 local upstream checkout, and `python tools/sync_schemas.py --check` to verify
 the vendored schema manifest.
 For the broader runtime documentation, see
-[getheddle.github.io/heddle](https://getheddle.github.io/heddle/).
+[getheddle.dev/heddle](https://getheddle.dev/heddle/).
 
 ## License
 
