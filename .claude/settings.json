@@ -4,5 +4,18 @@
       "Bash(pip install:*)",
       "Bash(pip3 install:*)"
     ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=$(jq -r '.tool_input.file_path // empty' 2>/dev/null); case \"$f\" in *heddle-sdk/schemas/v1/*.json|*heddle-sdk/swift/Sources/HeddleActor/Models.swift|*heddle-sdk/dotnet/src/Heddle.Sdk/Models.cs) (cd /Volumes/Data/Developer/ProfitFab/heddle-sdk && python tools/sync_schemas.py --check >&2) ;; esac; exit 0"
+          }
+        ]
+      }
+    ]
   }
 }

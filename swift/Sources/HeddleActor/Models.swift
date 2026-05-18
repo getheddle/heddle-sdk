@@ -373,3 +373,197 @@ public enum HeddleClock {
     }
 }
 
+// MARK: - Event-sourcing wire contract (Sprint 1, heddle.contrib.events)
+//
+// Vendored from `heddle.core.messages.EventEnvelope` /
+// `CommandMessage`. Distinct from the router-dispatched
+// TaskMessage/TaskResult above: these envelopes target an aggregate by
+// natural identity and CAS rather than a worker class. See
+// `heddle-contrib-events-m2-architecture-v7.md` §4.1.
+//
+// Timestamp fields (`occurred_at`, `recorded_at`, `issued_at`) are
+// modelled as ISO-8601 `String` to match the existing wire convention
+// used by `TaskMessage.createdAt`. Producers should emit RFC-3339
+// (e.g. `2026-05-16T12:00:00Z`).
+//
+// `event_id` / `command_id` default to a Foundation `UUID` (v4). The
+// Python source generates UUIDv7 for global time-ordering; Swift
+// stdlib lacks a v7 generator. Callers that need v7 ordering should
+// pass an externally-generated id; parsers don't care which version
+// produced the string.
+
+/// Provenance and correlation for an event.
+///
+/// `issuedBy` is a semi-structured identifier with one of six reserved
+/// prefixes — see ``IssuerConventions``.
+public struct EventMetadata: Codable, Equatable, Sendable {
+    public var commandId: String?
+    public var correlationId: String?
+    public var issuedBy: String
+    public var extra: [String: JSONValue]
+
+    enum CodingKeys: String, CodingKey {
+        case commandId = "command_id"
+        case correlationId = "correlation_id"
+        case issuedBy = "issued_by"
+        case extra
+    }
+
+    public init(
+        commandId: String? = nil,
+        correlationId: String? = nil,
+        issuedBy: String,
+        extra: [String: JSONValue] = [:]
+    ) {
+        self.commandId = commandId
+        self.correlationId = correlationId
+        self.issuedBy = issuedBy
+        self.extra = extra
+    }
+}
+
+/// Canonical event envelope for `heddle.contrib.events`.
+///
+/// Persisted in JetStream `HEDDLE_EVENTS_{TYPE}` streams. Replayed by
+/// aggregates to reconstruct state.
+///
+/// Ordering authority:
+///   - `aggregateVersion`: authoritative for in-aggregate ordering.
+///   - `recordedAt`: authoritative for cross-aggregate log ordering.
+///   - `occurredAt`: for domain queries only — never for ordering
+///     computation.
+public struct EventEnvelope: Codable, Equatable, Sendable {
+    public var eventId: String
+    public var aggregateType: String
+    public var aggregateId: String
+    public var aggregateVersion: Int
+    public var eventType: String
+    public var eventVersion: Int
+    public var payload: [String: JSONValue]
+    public var metadata: EventMetadata
+    public var occurredAt: String
+    public var recordedAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case eventId = "event_id"
+        case aggregateType = "aggregate_type"
+        case aggregateId = "aggregate_id"
+        case aggregateVersion = "aggregate_version"
+        case eventType = "event_type"
+        case eventVersion = "event_version"
+        case payload
+        case metadata
+        case occurredAt = "occurred_at"
+        case recordedAt = "recorded_at"
+    }
+
+    public init(
+        eventId: String = UUID().uuidString,
+        aggregateType: String,
+        aggregateId: String,
+        aggregateVersion: Int,
+        eventType: String,
+        eventVersion: Int = 1,
+        payload: [String: JSONValue] = [:],
+        metadata: EventMetadata,
+        occurredAt: String,
+        recordedAt: String
+    ) {
+        self.eventId = eventId
+        self.aggregateType = aggregateType
+        self.aggregateId = aggregateId
+        self.aggregateVersion = aggregateVersion
+        self.eventType = eventType
+        self.eventVersion = eventVersion
+        self.payload = payload
+        self.metadata = metadata
+        self.occurredAt = occurredAt
+        self.recordedAt = recordedAt
+    }
+}
+
+/// Provenance and correlation for a command.
+///
+/// `issuedByLegacy` is a reserved wire slot — present on the schema so
+/// adding it later doesn't break wire-compat; not used in M2.
+public struct CommandMetadata: Codable, Equatable, Sendable {
+    public var correlationId: String?
+    public var issuedBy: String
+    public var issuedByLegacy: String?
+    public var extra: [String: JSONValue]
+
+    enum CodingKeys: String, CodingKey {
+        case correlationId = "correlation_id"
+        case issuedBy = "issued_by"
+        case issuedByLegacy = "issued_by_legacy"
+        case extra
+    }
+
+    public init(
+        correlationId: String? = nil,
+        issuedBy: String,
+        issuedByLegacy: String? = nil,
+        extra: [String: JSONValue] = [:]
+    ) {
+        self.correlationId = correlationId
+        self.issuedBy = issuedBy
+        self.issuedByLegacy = issuedByLegacy
+        self.extra = extra
+    }
+}
+
+/// Canonical command envelope for `heddle.contrib.events`.
+///
+/// Published to JetStream `HEDDLE_COMMANDS_{TYPE}` streams. Distinct
+/// from ``TaskMessage``: a command targets an aggregate by natural
+/// identity and CAS; a task targets a worker class via router rules.
+///
+/// `expectedAggregateVersion` is the optimistic concurrency token.
+/// `nil` means "no version check" (typical for create-from-PF
+/// observers that have no prior state).
+public struct CommandMessage: Codable, Equatable, Sendable {
+    public var commandId: String
+    public var aggregateType: String
+    public var aggregateId: String
+    public var commandType: String
+    public var commandVersion: Int
+    public var payload: [String: JSONValue]
+    public var metadata: CommandMetadata
+    public var issuedAt: String
+    public var expectedAggregateVersion: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case commandId = "command_id"
+        case aggregateType = "aggregate_type"
+        case aggregateId = "aggregate_id"
+        case commandType = "command_type"
+        case commandVersion = "command_version"
+        case payload
+        case metadata
+        case issuedAt = "issued_at"
+        case expectedAggregateVersion = "expected_aggregate_version"
+    }
+
+    public init(
+        commandId: String = UUID().uuidString,
+        aggregateType: String,
+        aggregateId: String,
+        commandType: String,
+        commandVersion: Int = 1,
+        payload: [String: JSONValue] = [:],
+        metadata: CommandMetadata,
+        issuedAt: String,
+        expectedAggregateVersion: Int? = nil
+    ) {
+        self.commandId = commandId
+        self.aggregateType = aggregateType
+        self.aggregateId = aggregateId
+        self.commandType = commandType
+        self.commandVersion = commandVersion
+        self.payload = payload
+        self.metadata = metadata
+        self.issuedAt = issuedAt
+        self.expectedAggregateVersion = expectedAggregateVersion
+    }
+}
+

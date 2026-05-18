@@ -352,3 +352,157 @@ public sealed record WorkerOutput<TOutput>(TOutput Output)
     public JsonObject? Metadata { get; init; }
 }
 
+// ---------------------------------------------------------------------------
+// Event-sourcing wire contract (Sprint 1, heddle.contrib.events)
+// ---------------------------------------------------------------------------
+//
+// Vendored from heddle.core.messages.EventEnvelope / CommandMessage.
+// Distinct from the router-dispatched TaskMessage/TaskResult above:
+// these envelopes target an aggregate by natural identity and CAS
+// rather than a worker class. See
+// heddle-contrib-events-m2-architecture-v7.md §4.1.
+//
+// Timestamp fields (occurred_at, recorded_at, issued_at) are modelled
+// as ISO-8601 string to match the existing TaskMessage.created_at
+// convention.
+//
+// event_id / command_id default to Guid.NewGuid() (v4). The Python
+// source generates UUIDv7 for global time-ordering. .NET 9 ships
+// Guid.CreateVersion7() if v7 ordering matters to a caller; SDK
+// consumers can also pass an externally-generated id. Parsers don't
+// care which version produced the string.
+
+/// <summary>
+/// Provenance and correlation for an event.
+/// </summary>
+/// <remarks>
+/// <see cref="IssuedBy"/> is a semi-structured identifier with one of
+/// six reserved prefixes — see <see cref="IssuerConventions"/>.
+/// </remarks>
+public sealed record EventMetadata
+{
+    [JsonPropertyName("command_id")]
+    public string? CommandId { get; init; }
+
+    [JsonPropertyName("correlation_id")]
+    public string? CorrelationId { get; init; }
+
+    [JsonPropertyName("issued_by")]
+    public string IssuedBy { get; init; } = "";
+
+    [JsonPropertyName("extra")]
+    public JsonObject Extra { get; init; } = [];
+}
+
+/// <summary>
+/// Canonical event envelope for <c>heddle.contrib.events</c>.
+/// </summary>
+/// <remarks>
+/// Persisted in JetStream <c>HEDDLE_EVENTS_{TYPE}</c> streams.
+/// Replayed by aggregates to reconstruct state.
+///
+/// Ordering authority:
+/// <c>AggregateVersion</c> is authoritative for in-aggregate ordering
+/// (CAS field on <c>EventLog.append()</c>). <c>RecordedAt</c> is
+/// authoritative for cross-aggregate log ordering. <c>OccurredAt</c>
+/// is for domain queries only — never for ordering computation.
+/// </remarks>
+public sealed record EventEnvelope
+{
+    [JsonPropertyName("event_id")]
+    public string EventId { get; init; } = Guid.NewGuid().ToString();
+
+    [JsonPropertyName("aggregate_type")]
+    public string AggregateType { get; init; } = "";
+
+    [JsonPropertyName("aggregate_id")]
+    public string AggregateId { get; init; } = "";
+
+    [JsonPropertyName("aggregate_version")]
+    public int AggregateVersion { get; init; }
+
+    [JsonPropertyName("event_type")]
+    public string EventType { get; init; } = "";
+
+    [JsonPropertyName("event_version")]
+    public int EventVersion { get; init; } = 1;
+
+    [JsonPropertyName("payload")]
+    public JsonObject Payload { get; init; } = [];
+
+    [JsonPropertyName("metadata")]
+    public EventMetadata Metadata { get; init; } = new();
+
+    [JsonPropertyName("occurred_at")]
+    public string OccurredAt { get; init; } = "";
+
+    [JsonPropertyName("recorded_at")]
+    public string RecordedAt { get; init; } = "";
+}
+
+/// <summary>
+/// Provenance and correlation for a command.
+/// </summary>
+/// <remarks>
+/// <see cref="IssuedByLegacy"/> is a reserved wire slot — present on
+/// the schema so adding it later doesn't break wire-compat; not used
+/// in M2.
+/// </remarks>
+public sealed record CommandMetadata
+{
+    [JsonPropertyName("correlation_id")]
+    public string? CorrelationId { get; init; }
+
+    [JsonPropertyName("issued_by")]
+    public string IssuedBy { get; init; } = "";
+
+    [JsonPropertyName("issued_by_legacy")]
+    public string? IssuedByLegacy { get; init; }
+
+    [JsonPropertyName("extra")]
+    public JsonObject Extra { get; init; } = [];
+}
+
+/// <summary>
+/// Canonical command envelope for <c>heddle.contrib.events</c>.
+/// </summary>
+/// <remarks>
+/// Published to JetStream <c>HEDDLE_COMMANDS_{TYPE}</c> streams.
+/// Distinct from <see cref="TaskMessage"/>: a command targets an
+/// aggregate by natural identity and CAS; a task targets a worker
+/// class via router rules.
+///
+/// <see cref="ExpectedAggregateVersion"/> is the optimistic
+/// concurrency token. <c>null</c> means "no version check" (typical
+/// for create-from-PF observers that have no prior state).
+/// </remarks>
+public sealed record CommandMessage
+{
+    [JsonPropertyName("command_id")]
+    public string CommandId { get; init; } = Guid.NewGuid().ToString();
+
+    [JsonPropertyName("aggregate_type")]
+    public string AggregateType { get; init; } = "";
+
+    [JsonPropertyName("aggregate_id")]
+    public string AggregateId { get; init; } = "";
+
+    [JsonPropertyName("command_type")]
+    public string CommandType { get; init; } = "";
+
+    [JsonPropertyName("command_version")]
+    public int CommandVersion { get; init; } = 1;
+
+    [JsonPropertyName("payload")]
+    public JsonObject Payload { get; init; } = [];
+
+    [JsonPropertyName("metadata")]
+    public CommandMetadata Metadata { get; init; } = new();
+
+    [JsonPropertyName("issued_at")]
+    public string IssuedAt { get; init; } = "";
+
+    [JsonPropertyName("expected_aggregate_version")]
+    public int? ExpectedAggregateVersion { get; init; }
+}
+
