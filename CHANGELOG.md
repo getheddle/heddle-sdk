@@ -16,6 +16,37 @@ rule and `docs/CONTRIBUTING.md` for contributor-facing guidance.
 The SDK is pre-1.0 and pre-publication. All work to date is captured
 here as `Unreleased` until the first NuGet and SwiftPM tag.
 
+### Added
+
+- Event-sourcing wire contract (Sprint 1 of upstream M2 plan):
+  - Vendored schemas `event_envelope.schema.json` and
+    `command_message.schema.json` from upstream heddle into
+    `schemas/v1/`; `schemas/manifest.json` rewritten by
+    `tools/sync_schemas.py --update --upstream ../heddle`.
+  - Swift Codable models — `EventEnvelope`, `EventMetadata`,
+    `CommandMessage`, `CommandMetadata` in
+    `HeddleActor/Models.swift`.
+  - Swift subject helpers — `EventSubjects.event` / `.command` /
+    `.rejection` / `.eventStream` / `.commandStream` /
+    `.rejectionStream` / `.eventFilter` / `.commandFilter` /
+    `.rejectionFilter` in `HeddleActor/Subjects.swift`.
+  - Swift issuer-convention validators —
+    `HeddleActor/IssuerConventions.swift` with all six prefixes
+    (`framework:`, `observer:`, `projector:`, `user:`,
+    `user:system:`, `bridge:`) and multi-segment suffix support.
+  - .NET POCOs for the same four envelope types in
+    `Heddle.Sdk/Models.cs`.
+  - .NET subject helpers — `EventSubjects` static class in
+    `Heddle.Sdk/Subjects.cs`.
+  - .NET issuer-convention validators —
+    `Heddle.Sdk/IssuerConventions.cs`.
+  - Swift and .NET tests cover round-trip, subject formation, and
+    issuer validation including the two required multi-segment-suffix
+    cases (`user:system:emergency_correction:eng-42` and
+    `framework:cascade:retry:3`).
+  - Refs: upstream `heddle-contrib-events-m2-architecture-v7.md`
+    §4.1, §6 Sprint 1.
+
 ### Changed
 
 - `Models.cs` and `Models.swift` gain XML / DocC doc comments on
