@@ -6,7 +6,7 @@ truth for architecture, verification commands, and repo-specific rules.
 
 Cross-repo guidance (philosophy, invariants, wire-protocol contract,
 skills, and subagents) lives in
-**[`../heddle-agent-toolkit/`](../heddle-agent-toolkit/)** — installed
+**[`../heddle-workspace/`](../heddle-workspace/)** — installed
 into this repo's `.claude/` via the toolkit's `install.sh`.
 
 ## Claude-specific notes

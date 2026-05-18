@@ -11,7 +11,7 @@ changes:
 
 Cross-repo invariants and the wire-protocol contract map live in the
 sibling
-[`heddle-agent-toolkit`](https://github.com/getheddle/heddle-agent-toolkit)
+[`heddle-workspace`](https://github.com/getheddle/heddle-workspace)
 repo. The toolkit's `anchors/INVARIANTS.md` defines C1–C7 — schema
 source of truth, byte-identical subject names, statelessness, processor-
 not-LLM scope, transport abstraction, language parity, and
