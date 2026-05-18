@@ -15,7 +15,7 @@
 //
 // Underscore-prefixed wire keys (e.g. ``_trace_context``) are the
 // reserved middleware lane — see
-// heddle-agent-toolkit/anchors/CONTRACT_MAP.md "Reserved middleware
+// heddle-workspace/anchors/CONTRACT_MAP.md "Reserved middleware
 // lane." SDKs preserve them on inbound and outbound envelopes; they
 // are not part of the application contract.
 

@@ -145,7 +145,7 @@ The base class (`HeddleWorker<TPayload, TOutput>` in .NET,
 - **Trace context propagation**: copies `_trace_context` from the
   inbound `TaskMessage` to the outbound `TaskResult`. Tracing
   middleware injects/extracts this field — see
-  [`heddle-agent-toolkit/anchors/CONTRACT_MAP.md`](https://github.com/getheddle/heddle-agent-toolkit/blob/main/anchors/CONTRACT_MAP.md)
+  [`heddle-workspace/anchors/CONTRACT_MAP.md`](https://github.com/getheddle/heddle-workspace/blob/main/anchors/CONTRACT_MAP.md)
   "Reserved middleware lane."
 - **Failure handling**: exceptions or thrown errors during your
   `ProcessAsync` / `process` are converted to `TaskResult` with
