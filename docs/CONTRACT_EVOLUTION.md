@@ -46,7 +46,7 @@ python tools/sync_schemas.py --check-upstream --upstream ../heddle
 | Rename or remove field | New `v2` | Major or explicitly breaking prerelease | Clients must migrate serialized data and code |
 | Change field type or meaning | New `v2` | Major or explicitly breaking prerelease | Clients must migrate code and stored fixtures |
 | Add enum value | Treat as breaking until SDKs support unknown values | Major or coordinated prerelease | Clients must update decoders or use unknown fallback |
-| Add top-level envelope extension | Prefer schema update; if not in schema, document as extension | Minor if preserved safely | Clients should preserve unknown fields where possible |
+| Add top-level middleware lane key | Non-breaking | No SDK update needed; must be propagated. | Clients should preserve unknown fields where possible |
 
 ## SDK model rules
 
@@ -90,6 +90,14 @@ to the canonical schemas.
 ## Compatibility promises
 
 Before stable package releases, compatibility is best-effort and documented in
+release notes. After stable package releases:
+
+- Patch releases should not require client code changes.
+- Minor releases may add optional fields or helper APIs.
+- Major releases are the place for breaking wire-contract changes.
+- A new `schemas/vN` directory should coexist with earlier schema directories
+  for at least one major release cycle when practical.
+
 release notes. After stable package releases:
 
 - Patch releases should not require client code changes.

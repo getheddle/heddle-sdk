@@ -127,7 +127,7 @@ Every SDK should include tests for:
 - worker success path
 - worker failure path
 - malformed-message skip behavior
-- trace-context preservation
+- Middleware Lane durability (verify unknown `_`-prefixed keys propagate)
 - in-memory transport publish/subscribe behavior
 
 As the repository matures, these should converge on shared golden JSON fixtures
@@ -158,6 +158,10 @@ For JVM, prefer a Kotlin-authored core with Java-friendly APIs:
 - Scala should work naturally through the Java/Kotlin public API
 - Android should start as compatibility testing against the same core surface;
   split an Android-specific transport only if the NATS/client stack requires it
+
+Keep the first JVM milestone small: core package, in-memory transport, Kotlin
+echo example, Java echo example, then NATS.
+tack requires it
 
 Keep the first JVM milestone small: core package, in-memory transport, Kotlin
 echo example, Java echo example, then NATS.

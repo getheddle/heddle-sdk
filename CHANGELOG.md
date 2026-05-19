@@ -49,6 +49,7 @@ here as `Unreleased` until the first NuGet and SwiftPM tag.
 
 ### Changed
 
+- Formalized the **Middleware Lane** propagation policy: SDKs MUST capture and propagate all top-level JSON keys starting with an underscore (e.g., ``_trace_context``) verbatim. This ensures forward-compatibility for cross-cutting concerns like tracing without requiring SDK schema updates. Documentation updated in ``docs/PORTING.md`` and ``docs/CONTRACT_EVOLUTION.md``.
 - `Models.cs` and `Models.swift` gain XML / DocC doc comments on
   every public type. The doc comments explain what each envelope is,
   when application code constructs vs receives it, the wire-protocol
