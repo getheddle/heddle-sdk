@@ -7,6 +7,7 @@ the examples.
 
 - .NET SDK 8 or newer
 - Swift 6.2 or newer for the full Swift/NATS package surface
+- Java 17+ and Gradle (wrapped) for the JVM SDK
 - Python 3.11+ only if you want to build the docs locally
 
 No NATS server is required for the checked-in examples. They use the SDK
@@ -18,6 +19,7 @@ loop that a broker-backed deployment uses.
 ```bash
 dotnet build dotnet/src/Heddle.Sdk/Heddle.Sdk.csproj
 swift build --package-path swift
+./jvm/gradlew -p jvm build
 dotnet build dotnet/src/Heddle.Sdk.Nats/Heddle.Sdk.Nats.csproj
 swift build --package-path swift-nats
 ```
@@ -32,28 +34,39 @@ a Swift 6.2+ toolchain when resolving the NATS adapter packages.
 ```bash
 dotnet test dotnet/tests/Heddle.Sdk.Tests/Heddle.Sdk.Tests.csproj
 swift test --package-path swift
+./jvm/gradlew -p jvm test
 ```
 
-## Run the .NET example
+## Run the examples
 
+Every SDK includes an "echo worker" that performs the same logical work through its respective worker base. These examples use the SDK's in-memory transport by default.
+
+### .NET
 ```bash
 dotnet run --project examples/dotnet/EchoWorker/EchoWorker.csproj
+```
+
+### Swift
+```bash
+swift run --package-path examples/swift/echo-worker EchoWorker
+```
+
+### JVM (Kotlin)
+```bash
+./jvm/gradlew -p jvm :examples:runKotlinEcho
+```
+
+### JVM (Java)
+```bash
+./jvm/gradlew -p jvm :examples:runJavaEcho
 ```
 
 You should see a `TaskResult` JSON object with:
 
 - `status` set to `completed`
 - `worker_type` set to `echo`
-- an uppercased `output.text`
+- an uppercased or echoed `output`
 - `_trace_context` preserved from the input task
-
-## Run the Swift example
-
-```bash
-swift run --package-path examples/swift/echo-worker EchoWorker
-```
-
-The Swift example performs the same logical work through the Swift worker base.
 
 ## Build the docs
 
@@ -67,6 +80,7 @@ Read the language guide for your target:
 
 - [Swift SDK](SWIFT.md)
 - [.NET SDK](DOTNET.md)
+- [JVM SDK](JVM.md)
 
 Then replace the echo payload and output with your worker's domain types.
 Read [Workshop Compatibility](WORKSHOP.md) before wiring a native worker into a

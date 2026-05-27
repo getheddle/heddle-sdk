@@ -28,11 +28,12 @@ likely to drift from `getheddle/heddle`.
 | .NET NATS | Implemented with `Heddle.Sdk.Nats`; ready for live-runtime interop |
 | Swift core SDK | Implemented with `Codable` models, subjects, shallow validation, worker base, in-memory transport |
 | Swift NATS | Real `nats-io/nats.swift` binding builds on macOS; Linux builds package surface only |
+| JVM SDK | Implemented with Kotlin/Java models, subjects, worker base, in-memory transport, NATS adapter |
 | Docs site | MkDocs site with language guides, NATS docs, Workshop compatibility, and draw.io-generated diagrams |
 | Schema sync | Manifest and sync/check tooling in place |
 | Package publishing | First readiness pass in place |
 | Language porting guide | First draft in place |
-| JVM SDK | Planned |
+| JS/TS SDK | Planned |
 
 ## Batch 1: contract sync and migration policy
 
@@ -104,36 +105,19 @@ Exit criteria:
 - A dry-run release can produce local NuGet packages and a SwiftPM-consumable
   package reference without manual metadata fixes.
 
-## Batch 4: JVM SDK
+## Batch 4: JVM SDK (Completed)
 
 Goal: add JVM support for server-side Java/Kotlin/Scala and a credible Android
 path.
 
-Proposed shape:
+Status: Implemented in `jvm/` directory.
+
+Deliverables:
 
 - `jvm/core`: Kotlin/JVM core SDK with Java-friendly APIs.
 - `jvm/nats`: NATS transport adapter using the official Java NATS client.
-- `examples/jvm`: Kotlin worker first, Java example second, Scala usage notes
-  if the API is idiomatic enough from Scala.
-- Android support starts with compatibility testing against the same core API.
-  If Android transport constraints require it, split an Android-specific
-  adapter rather than weakening the server-side API.
-
-Early design calls:
-
-- Kotlin-first is the best authoring language for nullability and concise data
-  models, but public APIs should avoid Kotlin-only patterns where Java callers
-  would suffer.
-- Enums need an unknown-value strategy before publication because upstream enum
-  additions otherwise become hard breaking changes.
-- Coroutines are a good Kotlin surface; Java should still get a clear
-  `CompletableFuture` or blocking adapter story.
-
-Exit criteria:
-
-- JVM core and NATS packages build in CI.
-- Kotlin and Java echo examples interoperate with the same Heddle bus contract.
-- Publication metadata is ready for Maven Central.
+- `examples/jvm`: Kotlin and Java echo examples.
+- Android support verified via compatibility testing against core surface.
 
 ## Batch 5: release automation and conformance
 
@@ -154,6 +138,28 @@ Exit criteria:
 
 - A release candidate can be validated across all supported languages before
   any registry push.
+
+## Batch 6: JavaScript / TypeScript SDK
+
+Goal: add JS/TS support for Node.js (npm) and browser-side actors.
+
+Proposed shape:
+
+- `js/core`: TypeScript core SDK for Node.js and browser.
+- `js/nats`: NATS transport adapter using `nats.js` or `nats.ws`.
+- `examples/js`: Node.js echo worker and a simple browser-based worker.
+
+Early design calls:
+
+- TypeScript-first for better contract safety.
+- ESM-only or dual-build (CJS/ESM) depending on ecosystem trends.
+- Browser support via WebSockets (NATS WS) for direct-to-bus browser actors.
+
+Exit criteria:
+
+- JS/TS core and NATS packages build in CI.
+- Node.js and browser echo examples interoperate with the same Heddle bus contract.
+- Publication metadata is ready for npm.
 
 ## Open decisions
 

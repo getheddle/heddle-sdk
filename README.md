@@ -10,7 +10,7 @@ workers.
 
 Heddle's Python repository owns the runtime framework and canonical wire
 schemas. This repository packages those contracts for other language
-ecosystems, starting with .NET and Swift.
+ecosystems, including .NET, Swift, and JVM (Kotlin/Java).
 The upstream wire-protocol reference is
 [Foreign-Language Actors](https://getheddle.dev/heddle/foreign-actors/).
 
@@ -22,9 +22,11 @@ The upstream wire-protocol reference is
 - Swift `Codable` contract models, subject helpers, shallow schema validation,
   and a transport-agnostic worker base with an in-memory transport for local
   runs.
-- NATS transport adapters: .NET for live-runtime interop, plus a Swift adapter
-  that builds the real `nats-io/nats.swift` binding on macOS.
-- Runnable .NET and Swift echo-worker examples.
+- JVM (Kotlin/Java) contract models, subject helpers, shallow schema validation,
+  and a transport-agnostic worker base with an in-memory transport for local
+  runs.
+- NATS transport adapters: .NET, Swift (macOS), and JVM for live-runtime interop.
+- Runnable .NET, Swift, and JVM echo-worker examples.
 - A MkDocs documentation site with source-controlled draw.io diagrams.
 
 Broker-specific adapters can live beside the core packages without changing
@@ -32,10 +34,12 @@ worker code.
 
 ## Quick start
 
+Build the packages:
+
 ```bash
 dotnet build dotnet/src/Heddle.Sdk/Heddle.Sdk.csproj
-dotnet test dotnet/tests/Heddle.Sdk.Tests/Heddle.Sdk.Tests.csproj
 swift build --package-path swift
+./jvm/gradlew -p jvm build
 ```
 
 Run the examples:
@@ -43,6 +47,7 @@ Run the examples:
 ```bash
 dotnet run --project examples/dotnet/EchoWorker/EchoWorker.csproj
 swift run --package-path examples/swift/echo-worker EchoWorker
+./jvm/gradlew -p jvm :examples:runKotlinEcho
 ```
 
 ## Documentation
@@ -57,10 +62,11 @@ Start with:
 | [NATS Transports](docs/NATS.md) | Run SDK actors against Heddle, Workshop, and NATS |
 | [Swift SDK](docs/SWIFT.md) | Implement a Swift processor worker |
 | [.NET SDK](docs/DOTNET.md) | Implement a C# / .NET processor worker |
+| [JVM SDK](docs/JVM.md) | Implement a Kotlin or Java processor worker |
 | [Architecture](docs/ARCHITECTURE.md) | Repository layout and worker lifecycle |
-| [Adding a Language SDK](docs/PORTING.md) | Porting checklist for JVM and future languages |
-| [Publishing Packages](docs/PUBLISHING.md) | NuGet and SwiftPM release readiness checklist |
-| [Roadmap](docs/ROADMAP.md) | Planned schema, publishing, and JVM work |
+| [Adding a Language SDK](docs/PORTING.md) | Porting checklist for JS/TS and future languages |
+| [Publishing Packages](docs/PUBLISHING.md) | NuGet, SwiftPM, and Maven release readiness checklist |
+| [Roadmap](docs/ROADMAP.md) | Planned schema, publishing, and JS/TS work |
 | [Contract Evolution](docs/CONTRACT_EVOLUTION.md) | Schema sync and client migration policy |
 | [Contributing](docs/CONTRIBUTING.md) | Contribution boundaries and verification |
 

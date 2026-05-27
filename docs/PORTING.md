@@ -1,7 +1,7 @@
 # Adding a Language SDK
 
 This guide defines the expected shape for adding another Heddle language SDK.
-Use it before starting JVM, Go, Rust, TypeScript, or any other runtime.
+Use it before starting JS/TS, Go, Rust, or any other runtime.
 
 The goal is language-native worker authoring without a new protocol. Every SDK
 must speak the same Heddle wire contract exported from `getheddle/heddle`.
@@ -147,21 +147,15 @@ Each new language needs:
 Examples should compile without a live broker. Live interop examples may be
 documented as optional snippets.
 
-## JVM recommendation
+## JS/TS recommendation
 
-For JVM, prefer a Kotlin-authored core with Java-friendly APIs:
+For JavaScript and TypeScript, prefer a TypeScript-authored core:
 
-- Kotlin data classes or equivalent model types
-- Java callers should not need Kotlin-only conventions for basic worker code
-- coroutines are reasonable for Kotlin, but Java needs a clear
-  `CompletableFuture` or blocking bridge
-- Scala should work naturally through the Java/Kotlin public API
-- Android should start as compatibility testing against the same core surface;
-  split an Android-specific transport only if the NATS/client stack requires it
+- TypeScript interfaces or classes for model types.
+- Support both Node.js (npm) and browser environments.
+- Use `nats.js` for Node.js and `nats.ws` (WebSockets) for the browser.
+- Decide on ESM/CJS distribution early; prefer ESM for modern compatibility.
+- Async/await is the natural surface for the worker loop.
 
-Keep the first JVM milestone small: core package, in-memory transport, Kotlin
-echo example, Java echo example, then NATS.
-tack requires it
-
-Keep the first JVM milestone small: core package, in-memory transport, Kotlin
-echo example, Java echo example, then NATS.
+Keep the first JS/TS milestone small: core package, in-memory transport, 
+TypeScript echo example, then NATS.

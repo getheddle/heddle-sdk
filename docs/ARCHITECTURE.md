@@ -43,12 +43,25 @@ swift-nats/
   Sources/HeddleActorNATS/
     NatsTransport.swift
 
+jvm/
+  build.gradle.kts
+  core/src/main/kotlin/heddle/sdk/
+    HeddleWorker.kt
+    Models.kt
+    Transport.kt
+  nats/src/main/kotlin/heddle/sdk/nats/
+    NatsHeddleTransport.kt
+
 examples/
   dotnet/EchoWorker/
   swift/echo-worker/
+  jvm/
+    src/main/kotlin/heddle/examples/KotlinEchoWorker.kt
+    src/main/java/heddle/examples/JavaEchoWorker.java
 ```
 
 ## Package layers
+
 
 | Layer | Responsibility |
 |-------|----------------|
@@ -102,6 +115,6 @@ same commit or release train:
 1. Export schemas in `heddle`.
 2. Sync updated schemas with
    `python tools/sync_schemas.py --update --upstream ../heddle`.
-3. Update .NET and Swift typed wrappers.
+3. Update .NET, Swift, and JVM typed wrappers.
 4. Update examples and docs.
 5. Run SDK CI.
