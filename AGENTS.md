@@ -65,6 +65,8 @@ swift build --package-path swift
 swift test --package-path swift
 swift build --package-path swift-nats
 swift build --package-path examples/swift/echo-worker
+./jvm/gradlew -p jvm build                                   # JVM SDK; Java 17+
+./jvm/gradlew -p jvm test
 ```
 
 Docs:
@@ -85,6 +87,10 @@ and then regenerates dark variants.
 The toolkit's `/heddle-preflight` skill runs the standard pre-commit
 subset and reports pass/fail. The toolkit's `/heddle-contract-sync`
 skill wraps the upstream sync workflow.
+
+The only Python tool here (`tools/sync_schemas.py`) is standard-library
+only — do not `pip install` anything to run it. Keep handoffs short and
+concrete: name changed files, commands run, and any local tooling caveats.
 
 ## Repository map
 
