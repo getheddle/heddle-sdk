@@ -2,7 +2,7 @@
 
 `heddle-sdk` is the sibling repository for Heddle language SDKs. It
 packages the Heddle wire contract for non-Python processor workers,
-starting with .NET and Swift.
+with .NET, Swift, and JVM implementations.
 
 The canonical runtime remains [`getheddle/heddle`](https://github.com/getheddle/heddle).
 This repository must feel like a natural extension of that project: same
@@ -43,9 +43,9 @@ checkout. The skills and subagents named in this doc come from there.
 
 - `docs/ARCHITECTURE.md` — SDK module map and relationship to Heddle.
 - `docs/CONCEPTS.md` — protocol concepts in plain language.
-- `docs/PORTING.md` — checklist for adding JVM or another language SDK.
+- `docs/PORTING.md` — checklist for adding another language SDK.
 - `docs/PUBLISHING.md` — NuGet and SwiftPM release readiness checklist.
-- `docs/ROADMAP.md` — planned schema, publishing, and JVM work.
+- `docs/ROADMAP.md` — schema evolution, publishing, and language roadmap.
 - `docs/CONTRACT_EVOLUTION.md` — schema sync and migration policy.
 - `docs/CODING_GUIDE.md` — language-specific style and docs standards.
 - `docs/CONTRIBUTING.md` — contribution boundaries and review expectations.
@@ -65,6 +65,8 @@ swift build --package-path swift
 swift test --package-path swift
 swift build --package-path swift-nats
 swift build --package-path examples/swift/echo-worker
+./jvm/gradlew -p jvm build                                   # JVM SDK; Java 17+
+./jvm/gradlew -p jvm test
 ```
 
 Docs:
@@ -86,6 +88,10 @@ The toolkit's `/heddle-preflight` skill runs the standard pre-commit
 subset and reports pass/fail. The toolkit's `/heddle-contract-sync`
 skill wraps the upstream sync workflow.
 
+`tools/sync_schemas.py` is standard-library only — do not `pip install`
+anything to run it. Keep handoffs short and
+concrete: name changed files, commands run, and any local tooling caveats.
+
 ## Repository map
 
 ```text
@@ -101,6 +107,9 @@ swift/                   SwiftPM package: HeddleActor
 swift-nats/              SwiftPM NATS transport adapter
 examples/dotnet/         Runnable .NET examples
 examples/swift/          Runnable Swift examples
+jvm/core/               Kotlin/JVM contract models and worker base
+jvm/nats/               JVM NATS adapter
+jvm/examples/           Runnable JVM examples
 docs/                    MkDocs site
 docs/diagrams/           draw.io source diagrams
 docs/images/             exported SVG diagrams
@@ -118,7 +127,7 @@ invariant #8 and applies to every language SDK.
 
 Before committing:
 
-- Does this keep .NET and Swift behavior aligned (cross-repo invariant C6)?
+- Does this keep .NET, Swift, and JVM behavior aligned (cross-repo invariant C6)?
 - Does it preserve Heddle's subject naming and queue-group conventions
   (C2)?
 - Does it keep the SDK core free of transport-specific dependencies (C5)?
