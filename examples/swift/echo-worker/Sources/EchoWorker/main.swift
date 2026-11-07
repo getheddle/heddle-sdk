@@ -100,10 +100,18 @@ let task = TaskMessage(
     taskId: "task-echo-1",
     parentTaskId: "goal-demo-1",
     workerType: "echo",
-    payload: ["text": .string("hello from Swift")],
-    modelTier: .local,
-    traceContext: [
-        "traceparent": "00-00000000000000000000000000000000-0000000000000000-01"
+    input: ["text": .string("hello from Swift")],
+    modelTier: .local
+)
+
+// Frame the task. `_`-prefixed Middleware-Lane keys ride the frame and come
+// back unchanged on the result.
+let frame = HeddleWire.wrap(
+    .taskMessage(task),
+    lane: [
+        "_trace_context": .object([
+            "traceparent": .string("00-00000000000000000000000000000000-0000000000000000-01")
+        ])
     ]
 )
 
@@ -121,13 +129,12 @@ let workerLoop = Task {
 try await waitForWorkerSubscription(transport: transport, worker: worker)
 try await transport.publish(
     subject: worker.subject,
-    payload: HeddleCoders.encode(task)
+    payload: HeddleWire.serialize(frame)
 )
 
 let message = try await firstResult(from: results)
-let result = try HeddleCoders.decode(TaskResult.self, from: message.payload)
-let data = try HeddleCoders.encode(result)
-print(String(decoding: data, as: UTF8.self))
+let result = try HeddleWire.parseFrame(message.payload)
+print(String(decoding: try HeddleWire.serialize(result), as: UTF8.self))
 
 await transport.close()
 workerLoop.cancel()

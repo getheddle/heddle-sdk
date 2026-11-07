@@ -1,23 +1,17 @@
-// Language-native types mirroring Heddle's wire-protocol envelopes
-// (TaskMessage, TaskResult, OrchestratorGoal, CheckpointState) plus
-// the SDK-internal WorkerOutput<Output> ergonomic shape.
+// Language-native types for Heddle's v1 wire bodies (TaskMessage,
+// TaskResult, OrchestratorGoal), the standalone CheckpointState, and the
+// SDK-internal WorkerOutput<Output> ergonomic shape.
 //
-// The wire envelopes are vendored from the canonical Pydantic models
-// at heddle/src/heddle/core/messages.py via schemas/v1/*.schema.json.
-// These Swift structs are derived; do not edit them in isolation.
-// When the upstream schema changes, run `python tools/sync_schemas.py
-// --update --upstream ../heddle` from the repo root and align this
-// file with the regenerated schemas. See docs/CONTRACT_EVOLUTION.md.
+// The bodies mirror heddle/src/heddle/core/messages.py via
+// schemas/v1/*.schema.json. They travel inside a WireEnvelope frame
+// (Wire.swift) and are read and written only by HeddleWire, which applies
+// the contract's strict typing; they are deliberately not Codable. When the
+// upstream schemas change, run `python tools/sync_schemas.py --update
+// --upstream ../heddle` from the repo root, align this file and Wire.swift,
+// and re-run the fixture tests. See docs/CONTRACT_EVOLUTION.md.
 //
-// Field naming convention: camelCase Swift properties with explicit
-// `CodingKeys` mapping to snake_case wire names. The wire form is
-// authoritative.
-//
-// Underscore-prefixed wire keys (e.g. `_trace_context`) are the
-// reserved middleware lane — see
-// heddle-workspace/anchors/CONTRACT_MAP.md "Reserved middleware
-// lane." SDKs preserve them on inbound and outbound envelopes; they
-// are not part of the application contract.
+// Bodies carry no timestamps and no Middleware-Lane keys: both live on the
+// frame (WireEnvelope.occurredAt / recordedAt / lane).
 
 import Foundation
 
@@ -62,85 +56,59 @@ public enum TaskStatus: String, Codable, Sendable {
     case failed
 }
 
-/// Wire envelope for a unit of work dispatched to a worker.
+/// Body of a unit of work dispatched to a worker (`payload_type`
+/// `core.TaskMessage`).
 ///
-/// Vendored from `heddle.core.messages.TaskMessage`. Foreign
-/// processor workers receive a serialised `TaskMessage` from
-/// `heddle.tasks.{worker_type}.{tier}` and reply with a ``TaskResult``
-/// on `heddle.results.{parent_task_id or "default"}`.
+/// Mirrors `heddle.core.messages.TaskMessage`. Foreign processor workers
+/// receive it, framed, on `heddle.tasks.{worker_type}.{tier}` and reply with
+/// a framed ``TaskResult`` on `heddle.results.{parent_task_id or "default"}`.
 ///
 /// Worker authors implementing ``HeddleWorker`` do not construct
-/// `TaskMessage` themselves: the base class decodes it from the
-/// inbound transport, deserialises ``payload`` into the worker's
-/// native `Payload` type, and passes that typed payload to
-/// `process(payload:metadata:)`. Direct construction is mostly for
-/// tests and tooling.
-public struct TaskMessage: Codable, Equatable, Sendable {
+/// `TaskMessage` themselves: the base class parses the frame, decodes
+/// ``input`` into the worker's native `Payload` type, and passes it to
+/// `process(payload:metadata:)`. Direct construction is for tests and
+/// tooling; frame it with ``HeddleWire/wrap(_:lane:origin:correlationId:causationId:)``.
+public struct TaskMessage: Equatable, Sendable {
     public var taskId: String
     public var parentTaskId: String?
     public var workerType: String
-    public var payload: [String: JSONValue]
+    /// The worker's input, as opaque JSON (formerly `payload`).
+    public var input: [String: JSONValue]
     public var modelTier: ModelTier
     public var priority: TaskPriority
-    public var createdAt: String
     public var requestId: String?
     public var metadata: [String: JSONValue]
-    public var traceContext: [String: String]?
-
-    enum CodingKeys: String, CodingKey {
-        case taskId = "task_id"
-        case parentTaskId = "parent_task_id"
-        case workerType = "worker_type"
-        case payload
-        case modelTier = "model_tier"
-        case priority
-        case createdAt = "created_at"
-        case requestId = "request_id"
-        case metadata
-        case traceContext = "_trace_context"
-    }
 
     public init(
-        taskId: String = UUID().uuidString,
+        taskId: String = UUID().uuidString.lowercased(),
         parentTaskId: String? = nil,
         workerType: String,
-        payload: [String: JSONValue],
+        input: [String: JSONValue],
         modelTier: ModelTier = .standard,
         priority: TaskPriority = .normal,
-        createdAt: String = HeddleClock.nowIso8601(),
         requestId: String? = nil,
-        metadata: [String: JSONValue] = [:],
-        traceContext: [String: String]? = nil
+        metadata: [String: JSONValue] = [:]
     ) {
         self.taskId = taskId
         self.parentTaskId = parentTaskId
         self.workerType = workerType
-        self.payload = payload
+        self.input = input
         self.modelTier = modelTier
         self.priority = priority
-        self.createdAt = createdAt
         self.requestId = requestId
         self.metadata = metadata
-        self.traceContext = traceContext
     }
 }
 
-/// Wire envelope for a worker's response to a ``TaskMessage``.
+/// Body of a worker's response to a ``TaskMessage`` (`payload_type`
+/// `core.TaskResult`).
 ///
-/// Vendored from `heddle.core.messages.TaskResult`. Published by the
-/// worker on `heddle.results.{parent_task_id or "default"}` after
-/// `process(payload:metadata:)` returns (or throws / fails
-/// validation, in which case ``status`` is `.failed` and ``error``
-/// describes the cause).
-///
-/// Worker authors do not construct `TaskResult` directly. They
-/// return a ``WorkerOutput`` from `process(payload:metadata:)`, and
-/// ``HeddleWorker/handle(_:)-3xkrt`` assembles the `TaskResult`,
-/// filling in routing fields (``taskId``, ``parentTaskId``,
-/// ``workerType``), timing (``processingTimeMs``), status, and
-/// propagated ``traceContext``. This separation keeps worker code
-/// focused on domain output while the SDK owns the wire envelope.
-public struct TaskResult: Codable, Equatable, Sendable {
+/// Mirrors `heddle.core.messages.TaskResult`. Worker authors do not
+/// construct `TaskResult` directly: they return a ``WorkerOutput`` from
+/// `process(payload:metadata:)`, and ``HeddleWorker`` assembles the result
+/// (routing fields, status, timing, token usage) and frames it, copying the
+/// inbound frame's Middleware Lane.
+public struct TaskResult: Equatable, Sendable {
     public var taskId: String
     public var parentTaskId: String?
     public var workerType: String
@@ -151,23 +119,6 @@ public struct TaskResult: Codable, Equatable, Sendable {
     public var tokenUsage: [String: Int]
     public var metadata: [String: JSONValue]
     public var processingTimeMs: Int
-    public var completedAt: String
-    public var traceContext: [String: String]?
-
-    enum CodingKeys: String, CodingKey {
-        case taskId = "task_id"
-        case parentTaskId = "parent_task_id"
-        case workerType = "worker_type"
-        case status
-        case output
-        case error
-        case modelUsed = "model_used"
-        case tokenUsage = "token_usage"
-        case metadata
-        case processingTimeMs = "processing_time_ms"
-        case completedAt = "completed_at"
-        case traceContext = "_trace_context"
-    }
 
     public init(
         taskId: String,
@@ -179,9 +130,7 @@ public struct TaskResult: Codable, Equatable, Sendable {
         modelUsed: String? = nil,
         tokenUsage: [String: Int] = [:],
         metadata: [String: JSONValue] = [:],
-        processingTimeMs: Int = 0,
-        completedAt: String = HeddleClock.nowIso8601(),
-        traceContext: [String: String]? = nil
+        processingTimeMs: Int = 0
     ) {
         self.taskId = taskId
         self.parentTaskId = parentTaskId
@@ -193,40 +142,41 @@ public struct TaskResult: Codable, Equatable, Sendable {
         self.tokenUsage = tokenUsage
         self.metadata = metadata
         self.processingTimeMs = processingTimeMs
-        self.completedAt = completedAt
-        self.traceContext = traceContext
     }
 }
 
-/// Wire envelope for a higher-level goal handed to an orchestrator.
+/// Body of a higher-level goal handed to an orchestrator (`payload_type`
+/// `core.OrchestratorGoal`).
 ///
-/// Vendored from `heddle.core.messages.OrchestratorGoal`. SDKs can
-/// deserialise this envelope but the typical foreign-processor-worker
-/// flow doesn't construct one — orchestration happens on the Python
-/// side. Provided so cross-language tooling (CLI clients, scripted
-/// submitters) can encode goals in the same byte-identical form
-/// Heddle's orchestrators expect.
-public struct OrchestratorGoal: Codable, Equatable, Sendable {
+/// Mirrors `heddle.core.messages.OrchestratorGoal`. Orchestration happens on
+/// the Python side; the model exists so cross-language tooling (CLI clients,
+/// scripted submitters) can submit goals on `heddle.goals.incoming`.
+public struct OrchestratorGoal: Equatable, Sendable {
     public var goalId: String
     public var instruction: String
     public var context: [String: JSONValue]
     public var requestId: String?
     public var priority: TaskPriority
-    public var createdAt: String
 
-    enum CodingKeys: String, CodingKey {
-        case goalId = "goal_id"
-        case instruction
-        case context
-        case requestId = "request_id"
-        case priority
-        case createdAt = "created_at"
+    public init(
+        goalId: String = UUID().uuidString.lowercased(),
+        instruction: String,
+        context: [String: JSONValue] = [:],
+        requestId: String? = nil,
+        priority: TaskPriority = .normal
+    ) {
+        self.goalId = goalId
+        self.instruction = instruction
+        self.context = context
+        self.requestId = requestId
+        self.priority = priority
     }
 }
 
 /// Compressed orchestrator state captured for self-summarisation.
 ///
-/// Vendored from `heddle.core.messages.CheckpointState`. Used by
+/// Mirrors `heddle.core.messages.CheckpointState`. It is stored, not
+/// sent on the bus, so it is not framed; it stays `Codable`. Used by
 /// Heddle's `CheckpointManager` on the Python side when an
 /// orchestrator's conversation history exceeds a token threshold:
 /// the manager compresses history into this structure and persists
@@ -299,11 +249,12 @@ public struct CheckpointState: Codable, Equatable, Sendable {
 /// ## What it is not
 ///
 /// A wire envelope. `WorkerOutput` is never serialised onto the
-/// Heddle bus. The wire envelope for a worker's response is
-/// ``TaskResult``, which carries routing fields (task ID, parent
-/// task ID, worker type), lifecycle status, timing, and trace
-/// context — fields the worker shouldn't have to think about.
-/// ``HeddleWorker/handle(_:)-3xkrt`` is the bridge: it receives a
+/// Heddle bus. The wire body for a worker's response is
+/// ``TaskResult``, framed by a ``WireEnvelope``: routing fields (task
+/// ID, parent task ID, worker type), lifecycle status, timing, and
+/// the Middleware Lane — fields the worker shouldn't have to think
+/// about.
+/// ``HeddleWorker`` is the bridge: it receives a
 /// ``TaskMessage``, calls `process(payload:metadata:)`, and assembles
 /// a ``TaskResult`` from the returned `WorkerOutput` plus the
 /// inbound envelope's routing context.
@@ -314,7 +265,7 @@ public struct CheckpointState: Codable, Equatable, Sendable {
 /// ``TaskResult`` directly — would force worker authors to populate
 /// every routing and timing field on every call, duplicating work
 /// the base class can do once. Worse, mistakes in those fields
-/// (a wrong taskId, a missing traceContext propagation) would
+/// (a wrong taskId, a dropped Middleware-Lane key) would
 /// silently break message routing or tracing. Centralising the
 /// envelope construction in the base class makes the worker's job
 /// "produce typed output + optional metrics" and nothing else.
@@ -323,12 +274,10 @@ public struct CheckpointState: Codable, Equatable, Sendable {
 ///
 /// The .NET SDK defines a parallel `WorkerOutput<TOutput>` with the
 /// same role. The two diverge on idiom — .NET uses
-/// `Dictionary<string, int>?` and `JsonObject?` (nullable with
+/// `Dictionary<string, long>?` and `JsonObject?` (nullable with
 /// null-default), Swift uses non-optional types defaulting to empty
-/// collections. Both produce the same wire output: the .NET base
-/// class normalises nulls to empty collections when assembling the
-/// `TaskResult`, and Swift's empty defaults serialise to the same
-/// wire shape. The difference is language-idiomatic, not a contract
+/// collections. Both produce the same wire output: each base class
+/// normalises them when assembling the `TaskResult`. The difference is language-idiomatic, not a contract
 /// divergence.
 ///
 /// - Parameters:
@@ -343,9 +292,10 @@ public struct WorkerOutput<Output: Encodable & Sendable>: Sendable {
     /// output, for workers that delegate to an LLM. Surfaces in the
     /// ``TaskResult/modelUsed`` field of the wire envelope.
     public var modelUsed: String?
-    /// Optional token-usage metrics (typical keys: `prompt_tokens`,
-    /// `completion_tokens`). Surfaces in ``TaskResult/tokenUsage``.
-    /// Default empty.
+    /// Optional token-usage metrics. As upstream, the result carries
+    /// exactly `prompt_tokens` and `completion_tokens` in
+    /// ``TaskResult/tokenUsage``, each defaulting to 0; other keys are
+    /// not carried. Default empty.
     public var tokenUsage: [String: Int]
     /// Optional free-form per-task metadata. Surfaces in
     /// ``TaskResult/metadata``. Use for worker-specific diagnostics,
@@ -372,198 +322,3 @@ public enum HeddleClock {
         ISO8601DateFormatter().string(from: Date())
     }
 }
-
-// MARK: - Event-sourcing wire contract (Sprint 1, heddle.contrib.events)
-//
-// Vendored from `heddle.core.messages.EventEnvelope` /
-// `CommandMessage`. Distinct from the router-dispatched
-// TaskMessage/TaskResult above: these envelopes target an aggregate by
-// natural identity and CAS rather than a worker class. See
-// `heddle-contrib-events-m2-architecture-v7.md` §4.1.
-//
-// Timestamp fields (`occurred_at`, `recorded_at`, `issued_at`) are
-// modelled as ISO-8601 `String` to match the existing wire convention
-// used by `TaskMessage.createdAt`. Producers should emit RFC-3339
-// (e.g. `2026-05-16T12:00:00Z`).
-//
-// `event_id` / `command_id` default to a Foundation `UUID` (v4). The
-// Python source generates UUIDv7 for global time-ordering; Swift
-// stdlib lacks a v7 generator. Callers that need v7 ordering should
-// pass an externally-generated id; parsers don't care which version
-// produced the string.
-
-/// Provenance and correlation for an event.
-///
-/// `issuedBy` is a semi-structured identifier with one of six reserved
-/// prefixes — see ``IssuerConventions``.
-public struct EventMetadata: Codable, Equatable, Sendable {
-    public var commandId: String?
-    public var correlationId: String?
-    public var issuedBy: String
-    public var extra: [String: JSONValue]
-
-    enum CodingKeys: String, CodingKey {
-        case commandId = "command_id"
-        case correlationId = "correlation_id"
-        case issuedBy = "issued_by"
-        case extra
-    }
-
-    public init(
-        commandId: String? = nil,
-        correlationId: String? = nil,
-        issuedBy: String,
-        extra: [String: JSONValue] = [:]
-    ) {
-        self.commandId = commandId
-        self.correlationId = correlationId
-        self.issuedBy = issuedBy
-        self.extra = extra
-    }
-}
-
-/// Canonical event envelope for `heddle.contrib.events`.
-///
-/// Persisted in JetStream `HEDDLE_EVENTS_{TYPE}` streams. Replayed by
-/// aggregates to reconstruct state.
-///
-/// Ordering authority:
-///   - `aggregateVersion`: authoritative for in-aggregate ordering.
-///   - `recordedAt`: authoritative for cross-aggregate log ordering.
-///   - `occurredAt`: for domain queries only — never for ordering
-///     computation.
-public struct EventEnvelope: Codable, Equatable, Sendable {
-    public var eventId: String
-    public var aggregateType: String
-    public var aggregateId: String
-    public var aggregateVersion: Int
-    public var eventType: String
-    public var eventVersion: Int
-    public var payload: [String: JSONValue]
-    public var metadata: EventMetadata
-    public var occurredAt: String
-    public var recordedAt: String
-
-    enum CodingKeys: String, CodingKey {
-        case eventId = "event_id"
-        case aggregateType = "aggregate_type"
-        case aggregateId = "aggregate_id"
-        case aggregateVersion = "aggregate_version"
-        case eventType = "event_type"
-        case eventVersion = "event_version"
-        case payload
-        case metadata
-        case occurredAt = "occurred_at"
-        case recordedAt = "recorded_at"
-    }
-
-    public init(
-        eventId: String = UUID().uuidString,
-        aggregateType: String,
-        aggregateId: String,
-        aggregateVersion: Int,
-        eventType: String,
-        eventVersion: Int = 1,
-        payload: [String: JSONValue] = [:],
-        metadata: EventMetadata,
-        occurredAt: String,
-        recordedAt: String
-    ) {
-        self.eventId = eventId
-        self.aggregateType = aggregateType
-        self.aggregateId = aggregateId
-        self.aggregateVersion = aggregateVersion
-        self.eventType = eventType
-        self.eventVersion = eventVersion
-        self.payload = payload
-        self.metadata = metadata
-        self.occurredAt = occurredAt
-        self.recordedAt = recordedAt
-    }
-}
-
-/// Provenance and correlation for a command.
-///
-/// `issuedByLegacy` is a reserved wire slot — present on the schema so
-/// adding it later doesn't break wire-compat; not used in M2.
-public struct CommandMetadata: Codable, Equatable, Sendable {
-    public var correlationId: String?
-    public var issuedBy: String
-    public var issuedByLegacy: String?
-    public var extra: [String: JSONValue]
-
-    enum CodingKeys: String, CodingKey {
-        case correlationId = "correlation_id"
-        case issuedBy = "issued_by"
-        case issuedByLegacy = "issued_by_legacy"
-        case extra
-    }
-
-    public init(
-        correlationId: String? = nil,
-        issuedBy: String,
-        issuedByLegacy: String? = nil,
-        extra: [String: JSONValue] = [:]
-    ) {
-        self.correlationId = correlationId
-        self.issuedBy = issuedBy
-        self.issuedByLegacy = issuedByLegacy
-        self.extra = extra
-    }
-}
-
-/// Canonical command envelope for `heddle.contrib.events`.
-///
-/// Published to JetStream `HEDDLE_COMMANDS_{TYPE}` streams. Distinct
-/// from ``TaskMessage``: a command targets an aggregate by natural
-/// identity and CAS; a task targets a worker class via router rules.
-///
-/// `expectedAggregateVersion` is the optimistic concurrency token.
-/// `nil` means "no version check" (typical for create-from-PF
-/// observers that have no prior state).
-public struct CommandMessage: Codable, Equatable, Sendable {
-    public var commandId: String
-    public var aggregateType: String
-    public var aggregateId: String
-    public var commandType: String
-    public var commandVersion: Int
-    public var payload: [String: JSONValue]
-    public var metadata: CommandMetadata
-    public var issuedAt: String
-    public var expectedAggregateVersion: Int?
-
-    enum CodingKeys: String, CodingKey {
-        case commandId = "command_id"
-        case aggregateType = "aggregate_type"
-        case aggregateId = "aggregate_id"
-        case commandType = "command_type"
-        case commandVersion = "command_version"
-        case payload
-        case metadata
-        case issuedAt = "issued_at"
-        case expectedAggregateVersion = "expected_aggregate_version"
-    }
-
-    public init(
-        commandId: String = UUID().uuidString,
-        aggregateType: String,
-        aggregateId: String,
-        commandType: String,
-        commandVersion: Int = 1,
-        payload: [String: JSONValue] = [:],
-        metadata: CommandMetadata,
-        issuedAt: String,
-        expectedAggregateVersion: Int? = nil
-    ) {
-        self.commandId = commandId
-        self.aggregateType = aggregateType
-        self.aggregateId = aggregateId
-        self.commandType = commandType
-        self.commandVersion = commandVersion
-        self.payload = payload
-        self.metadata = metadata
-        self.issuedAt = issuedAt
-        self.expectedAggregateVersion = expectedAggregateVersion
-    }
-}
-
