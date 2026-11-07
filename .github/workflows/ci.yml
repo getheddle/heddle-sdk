@@ -48,7 +48,8 @@ jobs:
             artifacts/nuget/*.snupkg
 
   swift:
-    runs-on: ubuntu-latest
+    # setup-swift@v2 does not support ubuntu-latest (26.04) yet.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
       - uses: swift-actions/setup-swift@v2
