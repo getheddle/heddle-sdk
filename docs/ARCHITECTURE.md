@@ -66,10 +66,11 @@ examples/
 | Layer | Responsibility |
 |-------|----------------|
 | Schemas | Copied source of truth from Heddle's exported Pydantic models. |
-| Models | Language-native types for `TaskMessage`, `TaskResult`, `OrchestratorGoal`, `CheckpointState`. |
+| Wire | `WireEnvelope` frame and `HeddleWire` codec: two-step parse, strict frame, tolerant bodies, Middleware Lane. Tested against the vendored conformance fixtures. |
+| Models | Language-native bodies `TaskMessage`, `TaskResult`, `OrchestratorGoal`, plus the standalone `CheckpointState`. |
 | Subjects | Exact Heddle subject and queue-group conventions. |
 | Validation | Shallow JSON Schema boundary checks matching Heddle's runtime behavior. |
-| Worker base | Decode, validate, process, encode, publish, reset. |
+| Worker base | Parse the frame, validate, process, frame the result with the inbound lane, publish, reset. |
 | Core transports | Small publish/subscribe interface plus in-memory test transport. |
 | NATS adapters | Separate packages that connect the same worker loop to NATS Core. The .NET adapter is live-runtime ready; the Swift adapter builds the real binding on macOS. |
 
@@ -81,12 +82,14 @@ examples/
 The base workers own the repeated protocol work so application workers can
 focus on `process`.
 
-Malformed transport messages do not crash the process. They call a hook and the
+Malformed transport messages (bad frame, bad body, or a `payload_type` other
+than `core.TaskMessage`) do not crash the process. They call a hook and the
 subscription loop continues.
 
 Processing failures become `TaskResult(status = failed)`. The result keeps the
-task ID, parent task ID, worker type, and trace context so callers can correlate
-the failure.
+task ID, parent task ID and worker type, and its frame carries the inbound
+Middleware Lane (including `_trace_context`), so callers can correlate the
+failure.
 
 ## Transport compatibility
 

@@ -8,25 +8,36 @@ The useful boundary is:
 ```text
 Heddle runtime           Heddle SDK worker
 ----------------        ----------------------------
-Router                   Decodes TaskMessage JSON
-Orchestrator             Validates payload shape
+Router                   Parses the WireEnvelope frame
+Orchestrator             Validates the TaskMessage body
 NATS bus         <---->  Processes a native payload
-Python workers           Encodes TaskResult JSON
+Python workers           Frames a TaskResult body
 Workshop                 Publishes to result subject
 ```
 
-## The envelope and the payload
+## The frame, the body and the input
 
-Every task has two layers:
+Every message on the bus is a **frame** (`WireEnvelope`, schema
+`wire_envelope.schema.json`) carrying a typed **body**:
 
 | Layer | Meaning |
 |-------|---------|
-| Envelope | Routing, lifecycle, metadata, trace context. Stable across worker types. |
-| Payload | Worker-specific JSON object. Validated by the worker's input schema. |
+| Frame | `message_id`, `payload_type`, `origin`, `correlation_id`, `causation_id`, `occurred_at`, `recorded_at`, plus the Middleware Lane (`_`-prefixed keys). The body is in `payload`. |
+| Body | Chosen by `payload_type`: `core.TaskMessage`, `core.TaskResult` or `core.OrchestratorGoal`. Routing, lifecycle and metadata. |
+| Input | `TaskMessage.input`: the worker-specific JSON object, validated by the worker's input schema. |
 
-`TaskMessage` is the request envelope. `TaskResult` is the response envelope.
-Both use snake_case wire keys, even when the language API uses PascalCase or
+Parsing has two steps: validate the frame, then pick the body model by
+`payload_type` and validate the body. The frame is strict (an unknown top-level
+key that does not start with `_` is rejected); bodies are tolerant (unknown body
+keys are ignored). Timestamps live only on the frame: RFC 3339 with a UTC
+offset. Wire keys are snake_case, even when the language API uses PascalCase or
 camelCase names.
+
+Each SDK implements this in one place (`HeddleWire`, in `Wire.cs`,
+`Wire.swift` and `Wire.kt`) and is tested against the conformance fixtures
+vendored in `schemas/v1/fixtures/`, the same files the Python runtime is tested
+against. A rejected message reports the layer that rejected it (`frame`,
+`body` or `dispatch`).
 
 ## Subjects
 
@@ -47,7 +58,7 @@ the same task.
 ## Transports
 
 SDK workers depend on a small publish/subscribe transport boundary, not on a
-specific broker client. The checked-in .NET and Swift packages include
+specific broker client. The checked-in .NET, Swift and JVM packages include
 process-local in-memory transports for tests and examples. Those transports
 match Heddle's local `InMemoryBus` queue-group behavior, but they do not cross
 process boundaries.
@@ -63,14 +74,16 @@ participate in a live Heddle or Workshop runtime.
 The SDK worker base follows the upstream Heddle lifecycle:
 
 1. Receive bytes from a transport.
-2. Decode a `TaskMessage`.
-3. Skip malformed input and keep the loop alive.
+2. Parse the frame and its `TaskMessage` body.
+3. Skip malformed input (bad frame, bad body, or a `payload_type` other than
+   `core.TaskMessage`) and keep the loop alive.
 4. Run shallow input validation.
 5. Decode the worker payload into a native type.
 6. Process the payload.
 7. Encode output and verify it is a JSON object.
 8. Run shallow output validation.
-9. Publish a `TaskResult`.
+9. Frame the `TaskResult` with a fresh `message_id` and timestamps, copy the
+   inbound frame's Middleware Lane, and publish it.
 10. Reset before the next task.
 
 ## Writing a worker — the SDK author's API
@@ -97,9 +110,10 @@ override func process(
 ) async throws -> WorkerOutput<MyOutput>
 ```
 
-You receive a **typed payload** (already deserialised from the wire,
-already shallow-validated against your `InputSchema` / `inputSchema`
-if you provided one) and the inbound task's metadata dictionary. You
+You receive a **typed payload** (the task's `input`, already
+deserialised from the wire and shallow-validated against your
+`InputSchema` / `inputSchema` if you provided one) and the inbound
+task's metadata dictionary, with `model_tier` added as upstream does. You
 return a `WorkerOutput<MyOutput>` containing your typed domain output
 plus optional metrics (`ModelUsed` / `modelUsed`, `TokenUsage` /
 `tokenUsage`, `Metadata` / `metadata`).
@@ -108,19 +122,21 @@ plus optional metrics (`ModelUsed` / `modelUsed`, `TokenUsage` /
 
 This split is the most important thing to internalise:
 
-| | Wire envelope (on NATS) | SDK return type (in code) |
+| | Wire body (on NATS, framed) | SDK return type (in code) |
 |---|---|---|
 | **.NET** | `TaskResult` | `WorkerOutput<TOutput>` |
 | **Swift** | `TaskResult` | `WorkerOutput<Output>` |
+| **JVM** | `TaskResult` | `WorkerOutput<T>` |
 | **Constructed by** | the base class | your `ProcessAsync` / `process` |
-| **Contains** | routing fields, status, timing, trace context, output, metrics | typed output + optional metrics |
+| **Contains** | routing fields, status, timing, output, metrics | typed output + optional metrics |
 | **Serialised to the bus?** | **yes** | **no, never** |
 
 `WorkerOutput` is the SDK's ergonomic shape for "what a worker
 produces." The base class transforms it into `TaskResult` for the
 wire — filling in `task_id`, `parent_task_id`, `worker_type`,
-`status`, `processing_time_ms`, `_trace_context`, and your typed
-output as the `output` field. If you ever see `WorkerOutput` on the
+`status`, `processing_time_ms`, `token_usage` (exactly `prompt_tokens`
+and `completion_tokens`), and your typed output as the `output`
+field — and frames it. If you ever see `WorkerOutput` on the
 wire, that's a bug.
 
 ### What the base class handles for you
@@ -132,9 +148,10 @@ The base class (`HeddleWorker<TPayload, TOutput>` in .NET,
   `heddle.tasks.{worker_type}.{tier}` with queue group
   `processors-{worker_type}`. Queue groups give you free horizontal
   scaling — run N replicas, each gets ~1/N of the tasks.
-- **Malformed-message resilience**: bad inbound bytes call a hook
-  (`OnMalformedMessageAsync` / `malformedMessage(_:)`) and the
-  subscription loop keeps running. A single bad message must not take
+- **Malformed-message resilience**: a message that fails the frame,
+  the body, or the `payload_type` check calls a hook
+  (`OnMalformedMessageAsync` / `malformedMessage(_:)` /
+  `onMalformedMessage`) and the subscription loop keeps running. A single bad message must not take
   down a worker replica.
 - **Shallow input/output validation**: against the schemas you pass
   to the constructor. "Shallow" means top-level required fields and
@@ -142,9 +159,10 @@ The base class (`HeddleWorker<TPayload, TOutput>` in .NET,
   domain validation belongs inside your `ProcessAsync` / `process`.
 - **Timing**: measures elapsed processing time and emits it as
   `processing_time_ms` on the wire envelope.
-- **Trace context propagation**: copies `_trace_context` from the
-  inbound `TaskMessage` to the outbound `TaskResult`. Tracing
-  middleware injects/extracts this field — see
+- **Middleware-Lane propagation**: copies every `_`-prefixed frame
+  key (for example `_trace_context`) from the inbound frame to the
+  result frame, unchanged. Tracing middleware injects/extracts
+  `_trace_context` — see
   [`heddle-workspace/anchors/CONTRACT_MAP.md`](https://github.com/getheddle/heddle-workspace/blob/main/anchors/CONTRACT_MAP.md)
   "Reserved middleware lane."
 - **Failure handling**: exceptions or thrown errors during your
@@ -217,8 +235,10 @@ runtime and keeps foreign workers predictable. A worker may add stricter
 domain validation inside `process`, but that stricter behavior should be local
 to the worker.
 
-## Trace context
+## Middleware Lane and trace context
 
-Trace context rides as top-level `_trace_context`. SDKs preserve it on
-`TaskResult`. A transport adapter or worker can integrate with OpenTelemetry,
-but preserving the field verbatim is the minimum compatibility requirement.
+Top-level frame keys that start with `_` are the Middleware Lane: framework
+metadata such as `_trace_context` (W3C trace propagation). SDKs carry every lane
+key from an inbound task frame to its result frame, as opaque JSON. A transport
+adapter or worker can integrate with OpenTelemetry, but preserving the keys
+verbatim is the minimum compatibility requirement.

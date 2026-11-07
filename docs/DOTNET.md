@@ -25,8 +25,9 @@ internal sealed record EchoPayload(string Text);
 internal sealed record EchoOutput(string Text, int Length);
 ```
 
-`TaskMessage.Payload` is a `JsonObject`; the worker base deserializes it into
-`TPayload` using `HeddleJson.Options`. Output must serialize to a `JsonObject`.
+`TaskMessage.Input` is a `JsonObject`; the worker base deserializes it into
+`TPayload` using `HeddleJson.Options`. Frames are read and written with
+`HeddleWire` (`Parse`, `Wrap`, `Serialize`). Output must serialize to a `JsonObject`.
 
 ## Implement a worker
 

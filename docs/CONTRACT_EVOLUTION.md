@@ -8,14 +8,16 @@ packages, and how client migrations should be handled.
 
 The canonical message models live in `heddle.core.messages` in the upstream
 Heddle repository. Upstream exports those Pydantic models into
-`schemas/v1/*.schema.json`; this repository vendors those files under the same
+`schemas/v1/*.schema.json` (the `WireEnvelope` frame, the three core bodies and
+the standalone `CheckpointState`) together with language-neutral conformance
+fixtures in `schemas/v1/fixtures/`. This repository vendors both under the same
 path.
 
 The SDK repository also tracks `schemas/manifest.json`, which records:
 
 - the upstream Heddle commit used for the last schema sync
 - the schema version directory
-- the SHA-256 hash of each vendored schema file
+- the SHA-256 hash of each vendored schema and fixture file
 
 Run the local check before changing SDK models:
 
@@ -40,22 +42,28 @@ python tools/sync_schemas.py --check-upstream --upstream ../heddle
 
 | Upstream change | Schema directory | SDK release | Client migration |
 |-----------------|------------------|-------------|------------------|
-| Add optional envelope field with a default | Keep `v1` | Minor or prerelease patch | Clients can upgrade SDKs when convenient |
+| Add optional body field with a default | Keep `v1` | Minor or prerelease patch | Clients can upgrade SDKs when convenient; older receivers ignore the field |
 | Add optional metadata convention | Keep `v1` | Minor or prerelease patch | Document the convention; no forced code change |
-| Add required field | New `v2` | Major or explicitly breaking prerelease | Clients must update constructors/decoders |
+| Add required body field, or change a body's meaning | New `payload_type` (within v1) | Major or explicitly breaking prerelease | Clients must update constructors/decoders |
+| Add or change a frame field | New `v2` | Major or explicitly breaking prerelease | Every SDK must update its frame codec |
 | Rename or remove field | New `v2` | Major or explicitly breaking prerelease | Clients must migrate serialized data and code |
 | Change field type or meaning | New `v2` | Major or explicitly breaking prerelease | Clients must migrate code and stored fixtures |
 | Add enum value | Treat as breaking until SDKs support unknown values | Major or coordinated prerelease | Clients must update decoders or use unknown fallback |
-| Add top-level middleware lane key | Non-breaking | No SDK update needed; must be propagated. | Clients should preserve unknown fields where possible |
+| Add top-level Middleware-Lane key (`_`-prefixed) | Non-breaking | No SDK update needed; it is propagated as opaque JSON | None |
 
 ## SDK model rules
 
 - Wire keys stay snake_case and must match the exported schemas.
 - SDKs may expose idiomatic property names, but serialization must use the wire
   names.
-- Unknown fields should be preserved when the language makes that practical.
-  .NET currently preserves extension data; Swift currently models the known
-  `_trace_context` extension but does not preserve arbitrary unknown fields.
+- The frame is strict: an unknown top-level key that does not start with `_`
+  is rejected. `_`-prefixed keys (the Middleware Lane) are kept as opaque JSON
+  and copied from an inbound task frame to its result frame, in every SDK.
+- Bodies are tolerant readers: unknown body keys are accepted and dropped, as
+  the Python runtime does.
+- Every SDK passes every vendored conformance fixture
+  (`schemas/v1/fixtures/manifest.json`): valid fixtures round-trip by value,
+  invalid ones are rejected at the layer named in `rejected_at`.
 - Enums are strict today. Before public stable releases, add an unknown-value
   strategy or document enum additions as breaking.
 - Shallow worker payload validation stays aligned with Heddle runtime behavior:
@@ -63,14 +71,11 @@ python tools/sync_schemas.py --check-upstream --upstream ../heddle
 
 ## Trace context
 
-`_trace_context` is a documented top-level envelope extension used for W3C
-trace propagation. SDKs should preserve it when present and publish it back on
-`TaskResult`.
-
-Today this field is documented by Heddle's foreign-actor protocol and modeled
-by the SDKs, but it is not present in the exported `schemas/v1` files. Treat it
-as a compatibility-sensitive extension until upstream decides whether to add it
-to the canonical schemas.
+`_trace_context` is a Middleware-Lane key used for W3C trace propagation. The
+frame schema admits it through `patternProperties: {"^_": {}}`, and the SDKs
+carry it like any other lane key: verbatim, from the inbound task frame to the
+result frame. Its inner shape is defined by Heddle's foreign-actor protocol,
+not by the exported schemas.
 
 ## Migration flow
 
@@ -83,7 +88,8 @@ to the canonical schemas.
    ```
 
 4. Update language models, validators, worker bases, and examples.
-5. Add or update golden JSON fixtures and language tests.
+5. Run each SDK's fixture tests against the newly vendored fixtures, and add
+   language tests for anything the fixtures do not cover.
 6. Update docs with migration notes and supported-version caveats.
 7. Release SDK packages with the upstream schema commit in the release notes.
 

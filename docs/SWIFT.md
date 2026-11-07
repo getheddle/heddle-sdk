@@ -50,7 +50,7 @@ struct EchoOutput: Codable, Sendable {
 }
 ```
 
-Payload types decode from `TaskMessage.payload`. Output types must encode to a
+Payload types decode from `TaskMessage.input`. Output types must encode to a
 JSON object; arrays and primitive outputs fail the worker contract because
 `TaskResult.output` is object-shaped.
 

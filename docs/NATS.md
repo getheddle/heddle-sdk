@@ -105,7 +105,9 @@ Adapters carry raw Heddle JSON envelopes on NATS Core subjects:
 - workers subscribe to `heddle.tasks.{worker_type}.{tier}`
 - workers join queue group `processors-{worker_type}`
 - workers publish results to `heddle.results.{parent_task_id}`
-- malformed payloads are skipped by the worker base
-- `_trace_context` is preserved in `TaskResult`
+- malformed messages (bad frame, bad body, wrong `payload_type`) are skipped
+  by the worker base
+- `_`-prefixed lane keys such as `_trace_context` are copied onto the result
+  frame
 
 NATS Core is at-most-once. Start subscribers before publishing tasks.
