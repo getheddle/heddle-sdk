@@ -10,6 +10,11 @@ site/
 __pycache__/
 artifacts/
 
+# Gradle caches and build outputs (JVM SDK)
+.gradle/
+build/
+!jvm/gradle/
+
 # Toolkit-installed skills and subagents — managed by heddle-workspace/install.sh
 .claude/skills/
 .claude/agents/heddle-architect.md
