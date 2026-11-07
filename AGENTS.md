@@ -69,6 +69,12 @@ swift build --package-path examples/swift/echo-worker
 ./jvm/gradlew -p jvm test
 ```
 
+Live interop check (Docker, a sibling heddle checkout, JDK 17/21; not in CI):
+
+```bash
+tools/live_check/run.sh
+```
+
 Docs:
 
 ```bash
@@ -98,6 +104,7 @@ concrete: name changed files, commands run, and any local tooling caveats.
 schemas/v1/              Copied canonical JSON Schemas from heddle
 schemas/manifest.json    Upstream schema commit and schema file hashes
 tools/sync_schemas.py    Schema sync and manifest check tool
+tools/live_check/        Live interop check: Docker NATS + heddle router + all SDKs
 Package.swift            Root SwiftPM publication surface
 dotnet/src/Heddle.Sdk/   .NET contract models and worker base
 dotnet/src/Heddle.Sdk.Nats/

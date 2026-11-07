@@ -29,7 +29,7 @@ class KotlinEchoWorker(transport: HeddleTransport) : HeddleWorker<EchoPayload, E
 
 fun main() = runBlocking {
     // Connect to NATS (standard heddle default)
-    val transport = NatsHeddleTransport.connect("nats://localhost:4222")
+    val transport = NatsHeddleTransport.connect(System.getenv("NATS_URL") ?: "nats://localhost:4222")
     
     val worker = KotlinEchoWorker(transport)
     worker.run()
