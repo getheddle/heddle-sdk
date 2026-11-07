@@ -68,6 +68,18 @@ jobs:
       - name: Build examples
         run: swift build --package-path examples/swift/echo-worker
 
+  jvm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
+        with:
+          # Gradle 8.11 with Kotlin 2.0 runs on JDK 17 or 21, not newer.
+          distribution: temurin
+          java-version: "21"
+      - name: Build and test JVM SDK
+        run: ./jvm/gradlew -p jvm build
+
   swift-nats-macos:
     runs-on: macos-latest
     steps:

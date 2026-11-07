@@ -1,35 +1,54 @@
 package heddle.sdk
 
-import com.fasterxml.jackson.module.kotlin.convertValue
-import com.fasterxml.jackson.module.kotlin.readValue
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.onEach
 import org.slf4j.LoggerFactory
 import java.util.concurrent.TimeUnit
 
 /**
  * Base class for Heddle processor workers.
  *
- * Handles the subscription loop, decoding, validation, and result publishing.
- * Inherit from this class and implement [process] to create a worker.
+ * Inherit from this class and implement [process]. The base class:
+ *
+ * - subscribes to `heddle.tasks.{worker_type}.{tier}` with queue group
+ *   `processors-{worker_type}`;
+ * - parses the inbound [WireEnvelope] frame and its [TaskMessage] body, and
+ *   skips malformed messages (invalid frame, invalid body, or any
+ *   `payload_type` other than `core.TaskMessage`) after calling
+ *   [onMalformedMessage], without stopping the loop;
+ * - converts [TaskMessage.input] to the typed payload and calls [process]
+ *   with the task's metadata plus `model_tier`, as upstream;
+ * - builds the [TaskResult]: routing fields from the task, timing, and
+ *   output and metrics from the [WorkerOutput]; a thrown exception becomes a
+ *   `failed` result;
+ * - frames the result with a fresh `message_id` and timestamps, copies every
+ *   `_`-prefixed Middleware-Lane key from the inbound frame, and publishes it
+ *   to `heddle.results.{parent_task_id or "default"}`;
+ * - calls [reset] after every task. Workers are stateless in every language
+ *   SDK (cross-repo invariant C3).
  */
 abstract class HeddleWorker<TPayload : Any, TOutput : Any>(
     val workerType: String,
     val modelTier: ModelTier = ModelTier.STANDARD,
     private val payloadClass: Class<TPayload>,
     private val outputClass: Class<TOutput>,
-    private val transport: HeddleTransport
+    private val transport: HeddleTransport,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
-    /**
-     * Implement domain processing logic here.
-     */
+    /** Implement domain processing logic here. Throw on failure. */
     abstract suspend fun process(payload: TPayload, metadata: Map<String, Any?>): WorkerOutput<TOutput>
 
+    /** Called after every task, success or failure. Clear per-task state here. Default: no-op. */
+    open suspend fun reset() {}
+
     /**
-     * Start the worker subscription loop.
+     * Called when an inbound message is not a valid framed [TaskMessage]. The
+     * message is skipped and the loop continues. Default: log a warning.
      */
+    open suspend fun onMalformedMessage(data: ByteArray, error: WireFormatException) {
+        logger.warn("Skipping malformed message: ${error.message}")
+    }
+
+    /** Start the worker subscription loop. */
     suspend fun run() {
         val subject = HeddleSubjects.task(workerType, modelTier)
         val queueGroup = "processors-$workerType"
@@ -37,89 +56,89 @@ abstract class HeddleWorker<TPayload : Any, TOutput : Any>(
         logger.info("Starting worker '$workerType' on subject '$subject' (queue group '$queueGroup')")
 
         transport.subscribe(subject, queueGroup).collect { data ->
-            handleTask(data)
+            val frame = handle(data) ?: return@collect
+            val result = HeddleWire.parseBody(frame) as TaskResult
+            transport.publish(HeddleSubjects.result(result.parentTaskId), HeddleWire.serialize(frame))
         }
     }
 
-    private suspend fun handleTask(data: ByteArray) {
-        val startTime = System.nanoTime()
-        var inboundMessage: TaskMessage? = null
-
+    /**
+     * Handle one inbound transport message: parse the frame, run the task, and
+     * return the framed result. Returns null (after [onMalformedMessage]) when
+     * the message is not a valid framed [TaskMessage].
+     */
+    suspend fun handle(data: ByteArray): WireEnvelope? {
+        val envelope: WireEnvelope
+        val task: TaskMessage
         try {
-            // 1. Decode TaskMessage
-            inboundMessage = HeddleJson.mapper.readValue<TaskMessage>(data)
-
-            // 2. Validate Payload (Shallow)
-            val payloadNode = HeddleJson.mapper.valueToTree<com.fasterxml.jackson.databind.JsonNode>(inboundMessage.payload)
-            ShallowSchemaValidator.validate("Payload", payloadNode)
-
-            // 3. Convert to typed payload
-            val typedPayload = HeddleJson.mapper.convertValue(inboundMessage.payload, payloadClass)
-
-            // 4. Run Process
-            val workerOutput = process(typedPayload, inboundMessage.metadata)
-
-            // 5. Validate Output (Shallow)
-            val outputNode = HeddleJson.mapper.valueToTree<com.fasterxml.jackson.databind.JsonNode>(workerOutput.output)
-            ShallowSchemaValidator.validate("Output", outputNode)
-
-            // 6. Success: Publish TaskResult
-            val durationMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime).toInt()
-            val result = TaskResult(
-                taskId = inboundMessage.taskId,
-                parentTaskId = inboundMessage.parentTaskId,
-                workerType = workerType,
-                status = TaskStatus.COMPLETED,
-                output = HeddleJson.mapper.convertValue(workerOutput.output),
-                modelUsed = workerOutput.modelUsed,
-                tokenUsage = workerOutput.tokenUsage ?: emptyMap(),
-                metadata = workerOutput.metadata ?: emptyMap(),
-                processingTimeMs = durationMs,
-                traceContext = inboundMessage.traceContext
-            )
-
-            // Propagate extension data (Middleware Lane)
-            inboundMessage.getExtensionData().forEach { (k, v) ->
-                result.addExtensionData(k, v)
-            }
-
-            publishResult(result)
-
-        } catch (e: Exception) {
-            val durationMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime).toInt()
-            logger.error("Error processing task: ${e.message}", e)
-
-            if (inboundMessage != null) {
-                // Publish Failure TaskResult
-                val failureResult = TaskResult(
-                    taskId = inboundMessage.taskId,
-                    parentTaskId = inboundMessage.parentTaskId,
-                    workerType = workerType,
-                    status = TaskStatus.FAILED,
-                    error = e.message ?: "Unknown error",
-                    processingTimeMs = durationMs,
-                    traceContext = inboundMessage.traceContext
+            envelope = HeddleWire.parseFrame(data)
+            if (envelope.payloadType != PayloadTypes.TASK_MESSAGE) {
+                throw WireFormatException(
+                    WireLayer.DISPATCH,
+                    "expected payload_type '${PayloadTypes.TASK_MESSAGE}' on a task subject, got '${envelope.payloadType}'",
                 )
-                
-                // Propagate extension data even on failure
-                inboundMessage.getExtensionData().forEach { (k, v) ->
-                    failureResult.addExtensionData(k, v)
-                }
-
-                try {
-                    publishResult(failureResult)
-                } catch (pe: Exception) {
-                    logger.error("Failed to publish failure result: ${pe.message}", pe)
-                }
-            } else {
-                logger.warn("Skipping malformed message (could not decode TaskMessage)")
             }
+            task = HeddleWire.parseBody(envelope) as TaskMessage
+        } catch (e: WireFormatException) {
+            onMalformedMessage(data, e)
+            return null
+        }
+        return HeddleWire.wrap(handleTask(task), envelope.lane)
+    }
+
+    /**
+     * Run one task through [process] and result assembly. Never throws for a
+     * processing failure: the result has [TaskStatus.FAILED] instead.
+     */
+    suspend fun handleTask(task: TaskMessage): TaskResult {
+        val start = System.nanoTime()
+        fun elapsed() = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start)
+        try {
+            val payload = HeddleJson.mapper.convertValue(task.input, payloadClass)
+            val metadata = task.metadata + ("model_tier" to task.modelTier.wire)
+            val out = process(payload, metadata)
+            val outputNode = HeddleJson.mapper.valueToTree<com.fasterxml.jackson.databind.JsonNode>(out.output)
+            if (!outputNode.isObject) {
+                return result(task, TaskStatus.FAILED, elapsed(), error = "Worker output must serialize to a JSON object",
+                    modelUsed = out.modelUsed, tokens = out.tokenUsage)
+            }
+            @Suppress("UNCHECKED_CAST")
+            val output = HeddleJson.mapper.convertValue(outputNode, Map::class.java) as Map<String, Any?>
+            return result(task, TaskStatus.COMPLETED, elapsed(), output = output,
+                modelUsed = out.modelUsed, tokens = out.tokenUsage, metadata = out.metadata)
+        } catch (e: Exception) {
+            logger.error("Error processing task ${task.taskId}: ${e.message}", e)
+            return result(task, TaskStatus.FAILED, elapsed(), error = e.message ?: e.javaClass.simpleName)
+        } finally {
+            reset()
         }
     }
 
-    private suspend fun publishResult(result: TaskResult) {
-        val subject = HeddleSubjects.result(result.parentTaskId)
-        val data = HeddleJson.mapper.writeValueAsBytes(result)
-        transport.publish(subject, data)
-    }
+    // Mirrors heddle.worker.base._publish_result: token_usage always carries
+    // exactly prompt_tokens and completion_tokens, and metadata comes from the
+    // worker's output (never the task's).
+    private fun result(
+        task: TaskMessage,
+        status: TaskStatus,
+        elapsedMs: Long,
+        output: Map<String, Any?>? = null,
+        error: String? = null,
+        modelUsed: String? = null,
+        tokens: Map<String, Long>? = null,
+        metadata: Map<String, Any?>? = null,
+    ) = TaskResult(
+        taskId = task.taskId,
+        parentTaskId = task.parentTaskId,
+        workerType = task.workerType,
+        status = status,
+        output = output,
+        error = error,
+        modelUsed = modelUsed,
+        tokenUsage = mapOf(
+            "prompt_tokens" to (tokens?.get("prompt_tokens") ?: 0L),
+            "completion_tokens" to (tokens?.get("completion_tokens") ?: 0L),
+        ),
+        metadata = metadata ?: emptyMap(),
+        processingTimeMs = elapsedMs,
+    )
 }
