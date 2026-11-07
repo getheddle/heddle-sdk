@@ -105,6 +105,10 @@ object HeddleWire {
     private val mapper = jacksonObjectMapper().apply {
         // Reject `{...} trailing`, as Python, .NET and Swift do.
         configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_TRAILING_TOKENS, true)
+        // I-JSON: a repeated member name at any depth is a parse error (Jackson
+        // otherwise keeps the last value). NaN/Infinity are rejected by default;
+        // nesting is capped by StreamReadConstraints (1000 by default).
+        factory.enable(com.fasterxml.jackson.core.JsonParser.Feature.STRICT_DUPLICATE_DETECTION)
     }
 
     // ------------------------------------------------------------------
@@ -129,6 +133,10 @@ object HeddleWire {
             throw WireFormatException(WireLayer.FRAME, "message is not valid JSON", e)
         }
         if (root !is ObjectNode) throw WireFormatException(WireLayer.FRAME, "message is not a JSON object")
+        // A fraction/exponent literal that overflows parses to ±Infinity.
+        firstNonFinite(root)?.let {
+            throw WireFormatException(WireLayer.FRAME, "number $it is outside the IEEE 754 double range")
+        }
         return parseFrame(root)
     }
 
@@ -267,9 +275,27 @@ object HeddleWire {
         return root
     }
 
-    /** The frame as UTF-8 JSON bytes, ready to publish. */
+    /**
+     * The frame as UTF-8 JSON bytes, ready to publish.
+     *
+     * @throws IllegalArgumentException if the frame holds a non-finite number
+     *   (NaN, Infinity), which is not JSON and which every receiver rejects.
+     */
     @JvmStatic
-    fun serialize(envelope: WireEnvelope): ByteArray = mapper.writeValueAsBytes(toJsonObject(envelope))
+    fun serialize(envelope: WireEnvelope): ByteArray {
+        val tree = toJsonObject(envelope)
+        firstNonFinite(tree)?.let { throw IllegalArgumentException("non-finite number $it cannot be sent") }
+        return mapper.writeValueAsBytes(tree)
+    }
+
+    private fun firstNonFinite(node: JsonNode): Double? {
+        if (node.isFloatingPointNumber) {
+            val d = node.doubleValue()
+            return if (d.isNaN() || d.isInfinite()) d else null
+        }
+        for (child in node) firstNonFinite(child)?.let { return it }
+        return null
+    }
 
     /** The body as JSON, every field written. */
     @JvmStatic

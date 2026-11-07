@@ -94,6 +94,26 @@ func everyValidTaskFixtureYieldsAParseableResult(file: String) async throws {
     #expect(envelope.lane == inbound.lane)
 }
 
+@Test func unserializableOutputPublishesFailedResult() async throws {
+    let (_, body) = try await roundTrip(NaNWorker(workerType: "echo", tier: "local"), try HeddleWire.serialize(makeTaskFrame()))
+    guard case let .taskResult(result) = body else {
+        Issue.record("expected a TaskResult")
+        return
+    }
+    #expect(result.status == .failed)
+    #expect(result.output == nil)
+    #expect(result.error?.isEmpty == false)
+}
+
+private final class NaNWorker: HeddleWorker<[String: JSONValue], [String: Double]>, @unchecked Sendable {
+    override func process(
+        payload: [String: JSONValue],
+        metadata: [String: JSONValue]
+    ) async throws -> WorkerOutput<[String: Double]> {
+        WorkerOutput(output: ["score": .nan])
+    }
+}
+
 // MARK: - Helpers
 
 private func roundTrip<P, O>(

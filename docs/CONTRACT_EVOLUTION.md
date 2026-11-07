@@ -61,6 +61,9 @@ python tools/sync_schemas.py --check-upstream --upstream ../heddle
   and copied from an inbound task frame to its result frame, in every SDK.
 - Bodies are tolerant readers: unknown body keys are accepted and dropped, as
   the Python runtime does.
+- Message text follows two I-JSON rules (unique member names at every depth;
+  finite fraction/exponent numbers). A violation is a `frame` error in every
+  SDK, checked before the JSON is decoded.
 - Every SDK passes every vendored conformance fixture
   (`schemas/v1/fixtures/manifest.json`): valid fixtures round-trip by value,
   invalid ones are rejected at the layer named in `rejected_at`.

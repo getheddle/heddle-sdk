@@ -138,9 +138,23 @@ open class HeddleWorker<Payload: Decodable & Sendable, Output: Encodable & Senda
                 continue
             }
             guard case let .taskResult(result) = try HeddleWire.parseBody(frame) else { continue }
+            let payload: Data
+            do {
+                payload = try HeddleWire.serialize(frame)
+            } catch {
+                // The result cannot be written as wire JSON (for example a NaN
+                // in the output). Report a failure, as upstream does, rather
+                // than ending the loop.
+                var failed = result
+                failed.status = .failed
+                failed.output = nil
+                failed.metadata = [:]
+                failed.error = "Result is not serializable as wire JSON: \(error)"
+                payload = try HeddleWire.serialize(HeddleWire.wrap(.taskResult(failed), lane: frame.lane))
+            }
             try await transport.publish(
                 subject: HeddleSubjects.results(parentTaskId: result.parentTaskId),
-                payload: try HeddleWire.serialize(frame)
+                payload: payload
             )
         }
     }

@@ -18,6 +18,20 @@ here as `Unreleased` until the first NuGet and SwiftPM tag.
 
 ### Changed (breaking)
 
+- **Wire text follows heddle's two I-JSON rules** (getheddle/heddle#80): a
+  member name repeated in any object, at any depth (compared after
+  unescaping), or a fraction/exponent number that overflows a double, is a
+  `frame` error, as is nesting deeper than 1000 levels. Integer literals keep
+  their exact value. Each SDK enforces this before decoding: .NET with a
+  `Utf8JsonReader` pass, Swift with a scanner (`JSONDecoder` cannot see
+  repeated names), the JVM with Jackson's `STRICT_DUPLICATE_DETECTION` plus a
+  non-finite check. Before this, .NET accepted nested repeats and threw the
+  wrong exception for top-level ones, Swift kept the first value and the JVM
+  the last. Synced the three new fixtures (27 in total).
+- **No SDK sends non-finite numbers.** A worker result that cannot be written
+  as wire JSON (for example `NaN` in the output) is published as a `failed`
+  result instead; the JVM's `HeddleWire.serialize` now throws
+  `IllegalArgumentException` for a non-finite number.
 - **All three SDKs speak heddle's v1 `WireEnvelope` frame**
   ([#4](https://github.com/getheddle/heddle-sdk/issues/4)). This matches heddle
   v0.10.0 and later; earlier flat messages are no longer read or written.
@@ -78,9 +92,6 @@ here as `Unreleased` until the first NuGet and SwiftPM tag.
 - Swift's `JSONValue` turns an integer outside the 64-bit range inside opaque
   JSON (`input`, `output`, `metadata`, `context`, lane values) into a `Double`,
   so it does not round-trip exactly. .NET and the JVM keep it.
-- A JSON object with a repeated key is read differently: .NET rejects the
-  message, Swift keeps the first value, the JVM and Python keep the last. The
-  contract does not specify this case yet.
 - Frame timestamps must be representable in UTC between years 0001 and 9999,
   since the SDKs write them in UTC. Python also accepts offsets that move an
   instant just past those bounds.

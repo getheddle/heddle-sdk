@@ -94,6 +94,34 @@ public sealed class WireConformanceTests
         Assert.Equal(ok, HeddleWire.TryParseTimestamp(text, out _));
     }
 
+    [Theory]
+    [InlineData("""{"payload_type":"core.TaskMessage","payload":{},"_x":{"a":1,"\u0061":2}}""")]
+    [InlineData("""{"payload_type":"core.TaskMessage","payload":{"worker_type":"w","input":{"n":1e400}}}""")]
+    [InlineData("""{"payload_type":"core.TaskMessage","payload":{"worker_type":"w","input":{"n":NaN}}}""")]
+    public void TextThatIsNotIJsonIsAFrameError(string raw)
+    {
+        var error = Assert.Throws<WireFormatException>(() => HeddleWire.Parse(System.Text.Encoding.UTF8.GetBytes(raw)));
+        Assert.Equal(WireLayer.Frame, error.Layer);
+    }
+
+    [Fact]
+    public void SameNameInSiblingObjectsAndLargeIntegersAreFine()
+    {
+        var (_, body) = HeddleWire.Parse(
+            """{"payload_type":"core.TaskMessage","payload":{"worker_type":"w","input":{"a":{"k":1},"b":{"k":2},"big":123456789012345678901234567890}}}"""u8);
+        var task = Assert.IsType<TaskMessage>(body);
+        Assert.Equal("123456789012345678901234567890", task.Input["big"]!.ToJsonString());
+    }
+
+    [Fact]
+    public void NestingDeeperThanTheLimitIsAFrameError()
+    {
+        var deep = new string('[', 2000) + new string(']', 2000);
+        var raw = """{"payload_type":"core.TaskMessage","payload":{"worker_type":"w","input":{"d":""" + deep + "}}}";
+        var error = Assert.Throws<WireFormatException>(() => HeddleWire.Parse(System.Text.Encoding.UTF8.GetBytes(raw)));
+        Assert.Equal(WireLayer.Frame, error.Layer);
+    }
+
     [Fact]
     public void FractionBeyondMicrosecondsIsTruncated()
     {

@@ -133,6 +133,27 @@ public sealed class WorkerLoopTests
         Assert.Equal(inbound.Lane.Keys.OrderBy(k => k), envelope.Lane.Keys.OrderBy(k => k));
     }
 
+    [Fact]
+    public async Task UnserializableOutputPublishesFailedResult()
+    {
+        var (_, body) = await RoundTripAsync(new NaNWorker(), HeddleWire.Serialize(MakeTaskFrame()));
+        var result = Assert.IsType<TaskResult>(body);
+        Assert.Equal(HeddleTaskStatus.Failed, result.Status);
+        Assert.False(string.IsNullOrEmpty(result.Error));
+        Assert.Null(result.Output);
+    }
+
+    private sealed class NaNWorker() : HeddleWorker<JsonObject, JsonObject>("echo", "local")
+    {
+        protected override Task<WorkerOutput<JsonObject>> ProcessAsync(
+            JsonObject payload,
+            JsonObject metadata,
+            CancellationToken cancellationToken)
+        {
+            return Task.FromResult(new WorkerOutput<JsonObject>(new JsonObject { ["score"] = double.NaN }));
+        }
+    }
+
     private static async Task<(WireEnvelope Envelope, object Body)> RoundTripAsync<TPayload, TOutput>(
         HeddleWorker<TPayload, TOutput> worker,
         byte[] frame,
