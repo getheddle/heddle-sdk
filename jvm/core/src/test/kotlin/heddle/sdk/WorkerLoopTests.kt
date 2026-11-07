@@ -83,6 +83,25 @@ class WorkerLoopTests {
     }
 
     @Test
+    fun unserializableOutputPublishesFailedResult() = runTest {
+        val transport = InMemoryHeddleTransport()
+        val worker = object : HeddleWorker<Map<*, *>, Map<*, *>>(
+            "echo", ModelTier.LOCAL, Map::class.java, Map::class.java, transport,
+        ) {
+            override suspend fun process(payload: Map<*, *>, metadata: Map<String, Any?>) =
+                WorkerOutput<Map<*, *>>(mapOf("score" to Double.NaN))
+        }
+        backgroundScope.launch { worker.run() }
+        val results = transport.subscribe(HeddleSubjects.result("goal-1"))
+        transport.publish(HeddleSubjects.task("echo", ModelTier.LOCAL), HeddleWire.serialize(taskFrame()))
+
+        val result = HeddleWire.parse(results.first()).second as TaskResult
+        assertEquals(TaskStatus.FAILED, result.status)
+        assertNull(result.output)
+        assertTrue(result.error!!.startsWith("Result is not serializable"))
+    }
+
+    @Test
     fun resultEchoesTheTasksWorkerType() = runTest {
         val frame = HeddleWire.wrap(TaskMessage(workerType = "echo-v2", input = mapOf("message" to "hi")))
         val result = HeddleWire.parseBody(assertNotNull(EchoWorker().handle(HeddleWire.serialize(frame)))) as TaskResult

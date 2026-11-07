@@ -224,6 +224,7 @@ public enum HeddleWire {
 
     /// Validate the frame only. The body stays unvalidated JSON.
     public static func parseFrame(_ data: Data) throws -> WireEnvelope {
+        try WireTextScanner.check(data)
         let value: JSONValue
         do {
             value = try JSONDecoder().decode(JSONValue.self, from: data)
@@ -487,6 +488,125 @@ public enum HeddleWire {
             }
             return value
         }
+    }
+}
+
+// MARK: - Wire-text rules (I-JSON subset)
+
+/// Enforces the two I-JSON rules the v1 contract takes (fixtures README,
+/// "Message text"): member names are unique in every object at every depth
+/// (compared after unescaping), and a number with a fraction or exponent
+/// must not overflow a double. Integer literals are exempt. Nesting deeper
+/// than ``maxDepth`` is rejected too. `JSONDecoder` cannot see repeated names
+/// (it keeps one silently), so this runs first; it does not validate full
+/// JSON syntax, which the decoder does afterwards.
+enum WireTextScanner {
+    static let maxDepth = 1_000
+
+    private enum Container {
+        case object(Set<String>, expectingName: Bool)
+        case array
+    }
+
+    static func check(_ data: Data) throws {
+        let b = [UInt8](data)
+        var stack: [Container] = []
+        var i = 0
+        func fail(_ message: String) -> WireFormatError { WireFormatError(.frame, message) }
+
+        while i < b.count {
+            let c = b[i]
+            switch c {
+            case UInt8(ascii: "{"):
+                stack.append(.object([], expectingName: true))
+                guard stack.count <= maxDepth else { throw fail("JSON nesting is too deep") }
+                i += 1
+            case UInt8(ascii: "["):
+                stack.append(.array)
+                guard stack.count <= maxDepth else { throw fail("JSON nesting is too deep") }
+                i += 1
+            case UInt8(ascii: "}"), UInt8(ascii: "]"):
+                if !stack.isEmpty { stack.removeLast() }
+                i += 1
+            case UInt8(ascii: ","):
+                if case let .object(names, _) = stack.last {
+                    stack[stack.count - 1] = .object(names, expectingName: true)
+                }
+                i += 1
+            case UInt8(ascii: "\""):
+                let (text, next) = try readString(b, from: i)
+                if case .object(var names, true) = stack.last {
+                    guard names.insert(text).inserted else { throw fail("repeated member name '\(text)'") }
+                    stack[stack.count - 1] = .object(names, expectingName: false)
+                }
+                i = next
+            case UInt8(ascii: "-"), UInt8(ascii: "0")...UInt8(ascii: "9"):
+                var j = i
+                while j < b.count, isNumberByte(b[j]) { j += 1 }
+                let literal = String(decoding: b[i..<j], as: UTF8.self)
+                if literal.contains(where: { $0 == "." || $0 == "e" || $0 == "E" }),
+                   let value = Double(literal), value.isInfinite
+                {
+                    throw fail("number \(literal) is outside the IEEE 754 double range")
+                }
+                i = j
+            default:
+                i += 1
+            }
+        }
+    }
+
+    private static func isNumberByte(_ c: UInt8) -> Bool {
+        (c >= UInt8(ascii: "0") && c <= UInt8(ascii: "9"))
+            || c == UInt8(ascii: "-") || c == UInt8(ascii: "+") || c == UInt8(ascii: ".")
+            || c == UInt8(ascii: "e") || c == UInt8(ascii: "E")
+    }
+
+    /// Read the JSON string starting at `start` (a quote) and return its
+    /// unescaped text and the index just past the closing quote.
+    private static func readString(_ b: [UInt8], from start: Int) throws -> (String, Int) {
+        var units: [UInt16] = []
+        var i = start + 1
+        func hex4(_ at: Int) throws -> UInt16 {
+            guard at + 4 <= b.count, let v = UInt16(String(decoding: b[at..<(at + 4)], as: UTF8.self), radix: 16)
+            else { throw WireFormatError(.frame, "message is not valid JSON") }
+            return v
+        }
+        var raw: [UInt8] = []
+        func flushRaw() {
+            if !raw.isEmpty {
+                units.append(contentsOf: String(decoding: raw, as: UTF8.self).utf16)
+                raw.removeAll()
+            }
+        }
+        while i < b.count {
+            let c = b[i]
+            if c == UInt8(ascii: "\"") {
+                flushRaw()
+                return (String(decoding: units, as: UTF16.self), i + 1)
+            }
+            if c == UInt8(ascii: "\\"), i + 1 < b.count {
+                flushRaw()
+                let e = b[i + 1]
+                switch e {
+                case UInt8(ascii: "u"):
+                    units.append(try hex4(i + 2))
+                    i += 6
+                    continue
+                case UInt8(ascii: "n"): units.append(0x0A)
+                case UInt8(ascii: "t"): units.append(0x09)
+                case UInt8(ascii: "r"): units.append(0x0D)
+                case UInt8(ascii: "b"): units.append(0x08)
+                case UInt8(ascii: "f"): units.append(0x0C)
+                default: units.append(UInt16(e))
+                }
+                i += 2
+                continue
+            }
+            raw.append(c)
+            i += 1
+        }
+        throw WireFormatError(.frame, "message is not valid JSON")
     }
 }
 

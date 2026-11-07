@@ -139,11 +139,23 @@ public abstract class HeddleWorker<TPayload, TOutput>
             }
 
             var result = await HandleAsync(task, cancellationToken);
-            var subject = HeddleSubjects.Results(task.ParentTaskId);
-            await transport.PublishAsync(
-                subject,
-                HeddleWire.Serialize(HeddleWire.Wrap(result, envelope.Lane)),
-                cancellationToken);
+            byte[] bytes;
+            try
+            {
+                bytes = HeddleWire.Serialize(HeddleWire.Wrap(result, envelope.Lane));
+            }
+            catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or NotSupportedException)
+            {
+                // The worker's output or metadata cannot be written as wire
+                // JSON (for example a NaN). Report a failure, as upstream does,
+                // rather than ending the loop or sending text receivers drop.
+                bytes = HeddleWire.Serialize(HeddleWire.Wrap(
+                    Result(task, TaskStatus.Failed, result.ProcessingTimeMs,
+                        error: $"Result is not serializable as wire JSON: {ex.Message}"),
+                    envelope.Lane));
+            }
+
+            await transport.PublishAsync(HeddleSubjects.Results(task.ParentTaskId), bytes, cancellationToken);
         }
     }
 

@@ -1,7 +1,7 @@
 {
   "fixtures": {
     "fixtures/README.md": {
-      "sha256": "06d7d69051c6f418807ca930e106c66b96bb156cd69e45d356ff9fa9c3ae8d11"
+      "sha256": "0c4247736a62867b2c1f4ecb7b7d8c3c735bf03455505aa6a31352a0034f0299"
     },
     "fixtures/invalid/body_orchestrator_goal_missing_instruction.json": {
       "sha256": "bb28e754ef2a7af8ec621a34946e53f285c555af065329ba0fbcce4d3a5ede9e"
@@ -33,11 +33,20 @@
     "fixtures/invalid/frame_missing_payload_type.json": {
       "sha256": "230c36cc722775894d131fdb8237607ff6626021fb215609dffa5b887a0348ec"
     },
+    "fixtures/invalid/frame_non_finite_number.json": {
+      "sha256": "4a94d603d27d580536c9c93bdc018f9feff4bdd1fe5b7e2d34ed9b1370b76d6b"
+    },
     "fixtures/invalid/frame_null_timestamp.json": {
       "sha256": "114cb556b5267d4f1946b2865d83f9ffcede4f41b32f9153b5cb80d4c2727a56"
     },
     "fixtures/invalid/frame_payload_not_object.json": {
       "sha256": "214f5d24c5bfcfb51feec9cbc0686550db2143af8ab66913020816dbe8e2175e"
+    },
+    "fixtures/invalid/frame_repeated_member_name.json": {
+      "sha256": "ef1657c86ba0d79bc2e3fd4a50d27ef4e236791f92951c82ff2c2410855789bf"
+    },
+    "fixtures/invalid/frame_repeated_member_name_nested.json": {
+      "sha256": "b650183b32103b51fcddc8b1ebe753f3071d59a71af31d22499913b5fcf8470b"
     },
     "fixtures/invalid/frame_timestamp_without_offset.json": {
       "sha256": "2eb21d70ce41270986816fd61d3276a40fa412365f57e84d775215cfa481958b"
@@ -46,7 +55,7 @@
       "sha256": "e5e420c29817d80b235d8f21e55bbdcd263e1e8ecd3504b23cf501def731724f"
     },
     "fixtures/manifest.json": {
-      "sha256": "d160890ad75e2a1fd10f7d06913c99341d1599012d525b138c6f6a16d411c25a"
+      "sha256": "e9819830b53a3af289cc5fe13e3a8926c15cba7aa02ddb61921eea4d55d6ff85"
     },
     "fixtures/valid/orchestrator_goal.json": {
       "sha256": "018ecb60dc4b16c6e633dd1ee3e42a2ad5967c8e83a42283175b3f8759019438"
@@ -98,7 +107,7 @@
     }
   },
   "source": {
-    "commit": "b2a9c4bbbe138a1e4a4ec835b64462b002fb9a8b",
+    "commit": "f6e869ef590d011b51af2ad8d96266443b20eac7",
     "path": "schemas/v1",
     "repository": "getheddle/heddle"
   }

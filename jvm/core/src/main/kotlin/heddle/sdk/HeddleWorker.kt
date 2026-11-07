@@ -58,7 +58,20 @@ abstract class HeddleWorker<TPayload : Any, TOutput : Any>(
         transport.subscribe(subject, queueGroup).collect { data ->
             val frame = handle(data) ?: return@collect
             val result = HeddleWire.parseBody(frame) as TaskResult
-            transport.publish(HeddleSubjects.result(result.parentTaskId), HeddleWire.serialize(frame))
+            val bytes = try {
+                HeddleWire.serialize(frame)
+            } catch (e: IllegalArgumentException) {
+                // The result cannot be written as wire JSON (for example a NaN
+                // in the output). Report a failure, as upstream does.
+                val failed = result.copy(
+                    status = TaskStatus.FAILED,
+                    output = null,
+                    metadata = emptyMap(),
+                    error = "Result is not serializable as wire JSON: ${e.message}",
+                )
+                HeddleWire.serialize(HeddleWire.wrap(failed, frame.lane))
+            }
+            transport.publish(HeddleSubjects.result(result.parentTaskId), bytes)
         }
     }
 

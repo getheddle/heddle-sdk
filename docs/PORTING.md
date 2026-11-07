@@ -64,6 +64,12 @@ conformant when it passes every fixture.
   strings and booleans. Check the JSON library's coercion defaults.
 - Keep input, output, metadata, and context as JSON-object-shaped values.
 - Reject unknown non-`_` frame keys; ignore unknown body keys.
+- Enforce the wire-text rules before decoding (heddle
+  `schemas/v1/fixtures/README.md`, "Message text"): reject a member name
+  repeated in any object at any depth and a fraction/exponent number that
+  overflows a double, as `frame` errors. Most JSON libraries silently keep
+  the first or last repeated value; check yours against the
+  `frame_repeated_member_name*` fixtures. Never emit `NaN` or `Infinity`.
 - Decide enum behavior before publication. Strict enums are simple, but
   upstream enum additions become breaking changes unless the SDK has an
   unknown-value strategy.

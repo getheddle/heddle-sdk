@@ -45,7 +45,7 @@ class WireConformanceTests {
 
     @Test
     fun manifestListsTwentyFourFixtures() {
-        assertEquals(24, Fixtures.files("valid").size + Fixtures.files("invalid").size)
+        assertEquals(27, Fixtures.files("valid").size + Fixtures.files("invalid").size)
     }
 
     @Test
@@ -116,6 +116,33 @@ class WireConformanceTests {
     fun timestampFormattingIsUtcWithMicroseconds() {
         val value = assertNotNull(HeddleWire.parseTimestamp("2026-01-01T02:00:00.1234569+02:00"))
         assertEquals("2026-01-01T00:00:00.123456Z", HeddleWire.formatTimestamp(value))
+    }
+
+    @Test
+    fun textThatIsNotIJsonIsAFrameError() {
+        val cases = listOf(
+            """{"payload_type":"core.TaskMessage","payload":{},"_x":{"a":1,"\u0061":2}}""",
+            """{"payload_type":"core.TaskMessage","payload":{"worker_type":"w","input":{"n":1e400}}}""",
+            """{"payload_type":"core.TaskMessage","payload":{"worker_type":"w","input":{"n":NaN}}}""",
+            """{"payload_type":"core.TaskMessage","payload":{"worker_type":"w","input":{"d":${"[".repeat(2000)}${"]".repeat(2000)}}}}""",
+        )
+        for (raw in cases) {
+            val error = assertFailsWith<WireFormatException>(raw.take(80)) { HeddleWire.parse(raw.toByteArray()) }
+            assertEquals(WireLayer.FRAME, error.layer, raw.take(80))
+        }
+    }
+
+    @Test
+    fun sameNameInSiblingObjectsAndLargeIntegersAreFine() {
+        val raw = """{"payload_type":"core.TaskMessage","payload":{"worker_type":"w","input":{"a":{"k":1},"b":{"k":2},"big":123456789012345678901234567890}}}"""
+        val task = HeddleWire.parse(raw.toByteArray()).second as TaskMessage
+        assertEquals("123456789012345678901234567890", task.input["big"].toString())
+    }
+
+    @Test
+    fun serializeRefusesNonFiniteNumbers() {
+        val frame = HeddleWire.wrap(TaskMessage(workerType = "w", input = mapOf("x" to Double.NaN)))
+        assertFailsWith<IllegalArgumentException> { HeddleWire.serialize(frame) }
     }
 
     @Test

@@ -40,8 +40,45 @@ enum Fixtures {
     #expect(registered == PayloadTypes.all.sorted())
 }
 
-@Test func manifestListsTwentyFourFixtures() {
-    #expect(Fixtures.files("valid").count + Fixtures.files("invalid").count == 24)
+@Test func manifestListsTwentySevenFixtures() {
+    #expect(Fixtures.files("valid").count + Fixtures.files("invalid").count == 27)
+}
+
+@Test(arguments: [
+    #"{"payload_type":"core.TaskMessage","payload":{},"_x":{"a":1,"\u0061":2}}"#,
+    #"{"payload_type":"core.TaskMessage","payload":{"worker_type":"w","input":{"n":1e400}}}"#,
+    #"{"payload_type":"core.TaskMessage","payload":{"worker_type":"w","input":{"n":NaN}}}"#,
+    #"{"payload_type":"core.TaskMessage","payload":{"worker_type":"w","input":{"t":"a\"b","t":1}}}"#,
+])
+func textThatIsNotIJsonIsAFrameError(raw: String) {
+    #expect(throws: WireFormatError.self) { try HeddleWire.parse(Data(raw.utf8)) }
+    do { _ = try HeddleWire.parse(Data(raw.utf8)) } catch let error as WireFormatError {
+        #expect(error.layer == .frame)
+    } catch {
+        Issue.record("unexpected error \(error)")
+    }
+}
+
+@Test func sameNameInSiblingObjectsAndEscapedQuotesAreFine() throws {
+    let raw = #"{"payload_type":"core.TaskMessage","payload":{"worker_type":"w","input":{"a":{"k":1},"b":{"k":"x\"k\":"}}}}"#
+    let (_, body) = try HeddleWire.parse(Data(raw.utf8))
+    guard case .taskMessage = body else {
+        Issue.record("expected a TaskMessage")
+        return
+    }
+}
+
+@Test func nestingDeeperThanTheLimitIsAFrameError() {
+    let deep = String(repeating: "[", count: 2_000) + String(repeating: "]", count: 2_000)
+    let raw = #"{"payload_type":"core.TaskMessage","payload":{"worker_type":"w","input":{"d":"# + deep + "}}}"
+    do {
+        _ = try HeddleWire.parse(Data(raw.utf8))
+        Issue.record("accepted")
+    } catch let error as WireFormatError {
+        #expect(error.layer == .frame)
+    } catch {
+        Issue.record("unexpected error \(error)")
+    }
 }
 
 @Test(arguments: Fixtures.files("valid"))

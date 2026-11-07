@@ -124,14 +124,12 @@ public static class HeddleWire
     /// <summary>Validate the frame only. The body stays unvalidated JSON.</summary>
     public static WireEnvelope ParseFrame(ReadOnlySpan<byte> utf8Json)
     {
+        CheckWireText(utf8Json);
         JsonObject root;
         try
         {
             root = JsonNode.Parse(utf8Json, documentOptions: new JsonDocumentOptions { MaxDepth = MaxDepth }) as JsonObject
                 ?? throw new WireFormatException(WireLayer.Frame, "message is not a JSON object");
-            // JsonObject materializes lazily; walking the whole tree here
-            // surfaces duplicate keys at any depth now, not later.
-            _ = root.ToJsonString();
         }
         catch (Exception ex) when (ex is JsonException or ArgumentException or InvalidOperationException)
         {
@@ -139,6 +137,61 @@ public static class HeddleWire
         }
 
         return ParseFrame(root);
+    }
+
+    /// <summary>
+    /// Enforce the two I-JSON rules the v1 contract takes (fixtures README,
+    /// "Message text"): member names are unique in every object at every depth,
+    /// and a number with a fraction or exponent must not overflow a double.
+    /// NaN and Infinity are not JSON, so the reader rejects them already.
+    /// Integer literals are exempt. Nesting deeper than <see cref="MaxDepth"/>
+    /// is a frame error too.
+    /// </summary>
+    private static void CheckWireText(ReadOnlySpan<byte> utf8Json)
+    {
+        var reader = new Utf8JsonReader(utf8Json, new JsonReaderOptions { MaxDepth = MaxDepth });
+        var names = new Stack<HashSet<string>?>();
+        try
+        {
+            while (reader.Read())
+            {
+                switch (reader.TokenType)
+                {
+                    case JsonTokenType.StartObject:
+                        names.Push(new HashSet<string>(StringComparer.Ordinal));
+                        break;
+                    case JsonTokenType.StartArray:
+                        names.Push(null);
+                        break;
+                    case JsonTokenType.EndObject:
+                    case JsonTokenType.EndArray:
+                        names.Pop();
+                        break;
+                    case JsonTokenType.PropertyName:
+                        var name = reader.GetString()!;
+                        if (!names.Peek()!.Add(name))
+                        {
+                            throw new WireFormatException(WireLayer.Frame, $"repeated member name '{name}'");
+                        }
+
+                        break;
+                    case JsonTokenType.Number:
+                        // The reader is over one contiguous span, so ValueSpan holds the token.
+                        var raw = Encoding.UTF8.GetString(reader.ValueSpan);
+                        if (raw.AsSpan().IndexOfAny(".eE") >= 0
+                            && double.IsInfinity(double.Parse(raw, NumberStyles.Float, CultureInfo.InvariantCulture)))
+                        {
+                            throw new WireFormatException(WireLayer.Frame, $"number {raw} is outside the IEEE 754 double range");
+                        }
+
+                        break;
+                }
+            }
+        }
+        catch (JsonException ex)
+        {
+            throw new WireFormatException(WireLayer.Frame, "message is not valid JSON", ex);
+        }
     }
 
     /// <summary>Validate a frame that is already a JSON object.</summary>
