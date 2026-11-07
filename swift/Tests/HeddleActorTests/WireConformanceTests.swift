@@ -105,6 +105,10 @@ func invalidFixtureIsRejectedAtTheNamedLayer(file: String) throws {
     ("2026-02-30T00:00:00Z", false),
     ("2026-01-01T00:00:00Z\n", false),
     ("2026-01-01T00:00:00.Z", false),
+    ("0001-01-01T00:00:00+01:00", false),
+    ("9999-12-31T23:59:59-01:00", false),
+    ("0001-01-01T00:00:00Z", true),
+    ("9999-12-31T23:59:59.999999Z", true),
 ])
 func timestampsFollowRfc3339WithOffset(text: String, ok: Bool) {
     #expect((WireTimestamp.parse(text) != nil) == ok, "\(text)")

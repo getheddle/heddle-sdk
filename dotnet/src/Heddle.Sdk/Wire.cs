@@ -93,6 +93,10 @@ public sealed record WireEnvelope
 /// <summary>Strict reader and writer for the v1 wire frame and the core bodies.</summary>
 public static class HeddleWire
 {
+    // Nesting limit for inbound JSON; System.Text.Json's default (64) is far
+    // below Python's, which would reject deep but valid opaque input.
+    private const int MaxDepth = 1000;
+
     private static readonly string[] FrameFields =
     [
         "message_id", "payload_type", "payload", "origin", "correlation_id",
@@ -100,8 +104,9 @@ public static class HeddleWire
     ];
 
     // RFC 3339 date-time with a mandatory offset (envelope.py `_RFC3339`).
+    // ASCII digits only: .NET's \d also matches other Unicode digits.
     private static readonly Regex Rfc3339 = new(
-        @"^(\d{4})-(\d{2})-(\d{2})[Tt](\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?(?:([Zz])|([+-])(\d{2}):(\d{2}))\z",
+        @"^([0-9]{4})-([0-9]{2})-([0-9]{2})[Tt]([0-9]{2}):([0-9]{2}):([0-9]{2})(?:\.([0-9]+))?(?:([Zz])|([+-])([0-9]{2}):([0-9]{2}))\z",
         RegexOptions.CultureInvariant);
 
     // ------------------------------------------------------------------
@@ -122,10 +127,11 @@ public static class HeddleWire
         JsonObject root;
         try
         {
-            root = JsonNode.Parse(utf8Json) as JsonObject
+            root = JsonNode.Parse(utf8Json, documentOptions: new JsonDocumentOptions { MaxDepth = MaxDepth }) as JsonObject
                 ?? throw new WireFormatException(WireLayer.Frame, "message is not a JSON object");
-            // Enumerating forces duplicate-key detection.
-            _ = root.Count;
+            // JsonObject materializes lazily; walking the whole tree here
+            // surfaces duplicate keys at any depth now, not later.
+            _ = root.ToJsonString();
         }
         catch (Exception ex) when (ex is JsonException or ArgumentException or InvalidOperationException)
         {
@@ -323,7 +329,7 @@ public static class HeddleWire
             value = new DateTimeOffset(DateTime.SpecifyKind(utc, DateTimeKind.Utc));
             return true;
         }
-        catch (ArgumentOutOfRangeException)
+        catch (Exception ex) when (ex is ArgumentOutOfRangeException or FormatException or OverflowException)
         {
             return false;
         }
@@ -536,7 +542,7 @@ public static class HeddleWire
 
     private static bool IsIntegral(double d)
     {
-        return !double.IsInfinity(d) && Math.Floor(d) == d && d >= long.MinValue && d <= long.MaxValue;
+        return !double.IsInfinity(d) && Math.Floor(d) == d && d >= long.MinValue && d < long.MaxValue;
     }
 }
 

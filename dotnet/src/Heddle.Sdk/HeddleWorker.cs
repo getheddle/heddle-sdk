@@ -128,6 +128,15 @@ public abstract class HeddleWorker<TPayload, TOutput>
                 await OnMalformedMessageAsync(message, ex, cancellationToken);
                 continue;
             }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                // Defensive: no single message may stop the loop (Invariant 8).
+                await OnMalformedMessageAsync(
+                    message,
+                    new WireFormatException(WireLayer.Frame, ex.Message, ex),
+                    cancellationToken);
+                continue;
+            }
 
             var result = await HandleAsync(task, cancellationToken);
             var subject = HeddleSubjects.Results(task.ParentTaskId);

@@ -106,6 +106,9 @@ abstract class HeddleWorker<TPayload : Any, TOutput : Any>(
             val output = HeddleJson.mapper.convertValue(outputNode, Map::class.java) as Map<String, Any?>
             return result(task, TaskStatus.COMPLETED, elapsed(), output = output,
                 modelUsed = out.modelUsed, tokens = out.tokenUsage, metadata = out.metadata)
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            // A cancelled worker publishes nothing, as upstream.
+            throw e
         } catch (e: Exception) {
             logger.error("Error processing task ${task.taskId}: ${e.message}", e)
             return result(task, TaskStatus.FAILED, elapsed(), error = e.message ?: e.javaClass.simpleName)

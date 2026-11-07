@@ -45,7 +45,9 @@ here as `Unreleased` until the first NuGet and SwiftPM tag.
   and a copy of the inbound lane. `process` receives the task metadata plus
   `model_tier`; `token_usage` always has exactly `prompt_tokens` and
   `completion_tokens`; `processing_time_ms` is set on failures too;
-  output-validation failures keep `model_used` and token counts.
+  output-validation failures keep `model_used` and token counts (.NET and
+  Swift; the JVM base still takes no schemas and checks only that output is
+  a JSON object).
   - Swift: `handle(_ data:)` returns the framed result (`WireEnvelope?`).
   - JVM: new `onMalformedMessage` and `reset` hooks (malformed messages were
     only logged, and there was no reset); results echo the task's
@@ -54,6 +56,7 @@ here as `Unreleased` until the first NuGet and SwiftPM tag.
   `schemas/v1/fixtures/**` and hashes them in `schemas/manifest.json`. Every
   SDK's tests run all 24 fixtures from `manifest.json`.
 - `schemas/v1/` now has `wire_envelope.schema.json`.
+- CI has a `jvm` job (Temurin 21). The JVM SDK had no CI before.
 
 ### Removed
 
@@ -67,9 +70,25 @@ here as `Unreleased` until the first NuGet and SwiftPM tag.
 - The JVM's committed Gradle caches and build outputs (`jvm/.gradle`,
   `jvm/**/build`); they are now ignored.
 
-### Added
+### Known limitations
 
-- A `jvm` CI job (Temurin 21). The JVM SDK had no CI before.
+- `message_id` is a random UUID (v4); upstream generates UUIDv7 for it. Both
+  satisfy the schema, which requires only a string. (`task_id` and `goal_id`
+  are v4 in both.)
+- Swift's `JSONValue` turns an integer outside the 64-bit range inside opaque
+  JSON (`input`, `output`, `metadata`, `context`, lane values) into a `Double`,
+  so it does not round-trip exactly. .NET and the JVM keep it.
+- A JSON object with a repeated key is read differently: .NET rejects the
+  message, Swift keeps the first value, the JVM and Python keep the last. The
+  contract does not specify this case yet.
+- Frame timestamps must be representable in UTC between years 0001 and 9999,
+  since the SDKs write them in UTC. Python also accepts offsets that move an
+  instant just past those bounds.
+- When a worker parses `input` into its own payload type, .NET (System.Text.Json
+  Web defaults) and the JVM (Jackson) coerce some values that Swift rejects.
+  Pass an input schema, or validate in `process`, if that matters.
+
+### Added
 
 - Event-sourcing wire contract (Sprint 1 of upstream M2 plan):
   - Vendored schemas `event_envelope.schema.json` and

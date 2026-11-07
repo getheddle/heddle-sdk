@@ -85,6 +85,10 @@ public sealed class WireConformanceTests
     [InlineData("2026-01-01T00:00:60Z", false)]
     [InlineData("2026-02-30T00:00:00Z", false)]
     [InlineData("2026-01-01T00:00:00Z\n", false)]
+    [InlineData("0001-01-01T00:00:00+01:00", false)]
+    [InlineData("9999-12-31T23:59:59-01:00", false)]
+    [InlineData("0001-01-01T00:00:00Z", true)]
+    [InlineData("9999-12-31T23:59:59.999999Z", true)]
     public void TimestampsFollowRfc3339WithOffset(string text, bool ok)
     {
         Assert.Equal(ok, HeddleWire.TryParseTimestamp(text, out _));

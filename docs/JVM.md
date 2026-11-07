@@ -107,10 +107,18 @@ public static void main(String[] args) {
 
 - **Kotlin-first:** The SDK is authored in Kotlin to leverage null-safety and
   coroutines, but APIs are designed to be idiomatic for Java.
-- **Serialization:** Uses Jackson for JSON serialization, matching Heddle's
-  snake_case wire conventions.
-- **Enums:** Handled via Jackson's standard enum mapping; unknown enum values
-  should be handled gracefully by the application or a custom validator.
+- **Wire format:** Messages are `WireEnvelope` frames, read and written by
+  `HeddleWire` (`parse`, `wrap`, `serialize`) over Jackson trees with strict,
+  hand-checked rules; Jackson's lenient binding is not used for the frame or
+  bodies. `_`-prefixed lane keys are copied from each task frame to its result.
+- **Enums:** Strict. An unknown `model_tier`, `priority` or `status` value is a
+  body error, and the worker skips the message (`onMalformedMessage`).
+- **Hooks:** override `reset()` (called after every task) and
+  `onMalformedMessage(data, error)` (called for a message that fails the
+  frame, the body, or the `payload_type` check).
+- **No schema validation yet:** unlike the .NET and Swift worker bases, the JVM
+  worker takes no input or output schema. It checks only that the output
+  serializes to a JSON object. Validate inside `process` if you need more.
 - **Transport:** The NATS adapter uses the official `nats-io/jnats` client.
 - **Android:** The core SDK is compatible with Android. If Android-specific
   transport constraints arise, use a specialized transport adapter.

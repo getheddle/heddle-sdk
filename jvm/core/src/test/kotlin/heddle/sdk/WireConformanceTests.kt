@@ -104,6 +104,10 @@ class WireConformanceTests {
             "2026-02-30T00:00:00Z" to false,
             "2026-01-01T00:00:00Z\n" to false,
             "2026-01-01T00:00:00.Z" to false,
+            "0001-01-01T00:00:00+01:00" to false,
+            "9999-12-31T23:59:59-01:00" to false,
+            "0001-01-01T00:00:00Z" to true,
+            "9999-12-31T23:59:59.999999Z" to true,
         )
         for ((text, ok) in cases) assertEquals(ok, HeddleWire.parseTimestamp(text) != null, text)
     }
@@ -112,6 +116,20 @@ class WireConformanceTests {
     fun timestampFormattingIsUtcWithMicroseconds() {
         val value = assertNotNull(HeddleWire.parseTimestamp("2026-01-01T02:00:00.1234569+02:00"))
         assertEquals("2026-01-01T00:00:00.123456Z", HeddleWire.formatTimestamp(value))
+    }
+
+    @Test
+    fun earliestInstantFormatsAsYearOne() {
+        val value = assertNotNull(HeddleWire.parseTimestamp("0001-01-01T00:00:00Z"))
+        assertEquals("0001-01-01T00:00:00.000000Z", HeddleWire.formatTimestamp(value))
+    }
+
+    @Test
+    fun trailingBytesAreAFrameError() {
+        val error = assertFailsWith<WireFormatException> {
+            HeddleWire.parseFrame("""{"payload_type":"core.TaskMessage","payload":{}} x""".toByteArray())
+        }
+        assertEquals(WireLayer.FRAME, error.layer)
     }
 
     @Test

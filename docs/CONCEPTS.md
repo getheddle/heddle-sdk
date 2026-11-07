@@ -113,7 +113,8 @@ override func process(
 You receive a **typed payload** (the task's `input`, already
 deserialised from the wire and shallow-validated against your
 `InputSchema` / `inputSchema` if you provided one) and the inbound
-task's metadata dictionary, with `model_tier` added as upstream does. You
+task's metadata dictionary, with `model_tier` added as upstream does.
+(The JVM worker base does not take schemas yet; see [JVM](JVM.md#jvm-notes).) You
 return a `WorkerOutput<MyOutput>` containing your typed domain output
 plus optional metrics (`ModelUsed` / `modelUsed`, `TokenUsage` /
 `tokenUsage`, `Metadata` / `metadata`).

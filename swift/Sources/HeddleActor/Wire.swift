@@ -130,6 +130,9 @@ public struct WireTimestamp: Equatable, Hashable, Sendable, CustomStringConverti
 
         let days = Int64(daysFromCivil(year: year, month: month, day: day))
         let seconds = days * 86_400 + Int64(hour * 3_600 + minute * 60 + second) - Int64(offsetMinutes * 60)
+        // The instant must be representable in UTC (years 0001-9999), since
+        // frames are written in UTC.
+        guard seconds >= minUtcSeconds, seconds <= maxUtcSeconds else { return nil }
         return WireTimestamp(epochMicroseconds: seconds * 1_000_000 + Int64(micros))
     }
 
@@ -488,6 +491,9 @@ public enum HeddleWire {
 }
 
 // MARK: - Calendar arithmetic (proleptic Gregorian, UTC)
+
+private let minUtcSeconds = Int64(daysFromCivil(year: 1, month: 1, day: 1)) * 86_400
+private let maxUtcSeconds = Int64(daysFromCivil(year: 9_999, month: 12, day: 31)) * 86_400 + 86_399
 
 private func isLeap(_ year: Int) -> Bool {
     (year % 4 == 0 && year % 100 != 0) || year % 400 == 0

@@ -89,6 +89,8 @@ public sealed class WorkerLoopTests
     [InlineData("""{"payload_type":"core.TaskResult","payload":{"task_id":"t","worker_type":"echo","status":"completed"}}""", WireLayer.Dispatch)]
     [InlineData("""{"payload_type":"events.Event","payload":{}}""", WireLayer.Dispatch)]
     [InlineData("""not json""", WireLayer.Frame)]
+    [InlineData("""{"payload_type":"core.TaskMessage","payload":{"worker_type":"echo","input":{"text":"hi"}},"occurred_at":"２０26-01-01T00:00:00Z"}""", WireLayer.Frame)]
+    [InlineData("""{"payload_type":"core.TaskMessage","payload":{"worker_type":"echo","input":{"text":"hi"},"input":{"text":"again"}}}""", WireLayer.Frame)]
     public async Task MalformedMessagesAreSkippedAndTheLoopContinues(string raw, WireLayer layer)
     {
         await using var transport = new InMemoryHeddleTransport();

@@ -96,13 +96,16 @@ object HeddleWire {
         """(\d{4})-(\d{2})-(\d{2})[Tt](\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?(?:([Zz])|([+-])(\d{2}):(\d{2}))"""
     )
 
-    private val format = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'").withZone(ZoneOffset.UTC)
+    private val format = DateTimeFormatter.ofPattern("uuuu-MM-dd'T'HH:mm:ss.SSSSSS'Z'").withZone(ZoneOffset.UTC)
 
     private val nodes = JsonNodeFactory.instance
 
     // A plain mapper for the wire: no NON_NULL inclusion (opaque JSON keeps
     // its nulls) and no binding, only tree reading and writing.
-    private val mapper = jacksonObjectMapper()
+    private val mapper = jacksonObjectMapper().apply {
+        // Reject `{...} trailing`, as Python, .NET and Swift do.
+        configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_TRAILING_TOKENS, true)
+    }
 
     // ------------------------------------------------------------------
     // Frame
@@ -330,8 +333,11 @@ object HeddleWire {
                 if (hours > 23 || minutes > 59) return null
                 offsetSeconds = (hours * 3600L + minutes * 60L) * (if (g[9] == "-") -1 else 1)
             }
-            if (local.year < 1) return null
-            Instant.ofEpochSecond(local.toEpochSecond(ZoneOffset.UTC) - offsetSeconds, micros * 1000)
+            val instant = Instant.ofEpochSecond(local.toEpochSecond(ZoneOffset.UTC) - offsetSeconds, micros * 1000)
+            // The instant must be representable in UTC (years 0001-9999), since
+            // frames are written in UTC.
+            if (instant < minUtc || instant > maxUtc) return null
+            instant
         } catch (e: DateTimeException) {
             null
         }
@@ -340,6 +346,9 @@ object HeddleWire {
     /** UTC, six fractional digits, `Z`. Any instant-equal form is conformant. */
     @JvmStatic
     fun formatTimestamp(value: Instant): String = format.format(value)
+
+    private val minUtc: Instant = Instant.parse("0001-01-01T00:00:00Z")
+    private val maxUtc: Instant = Instant.parse("9999-12-31T23:59:59.999999Z")
 
     private fun now(): Instant {
         val n = Instant.now()

@@ -169,6 +169,9 @@ open class HeddleWorker<Payload: Decodable & Sendable, Output: Encodable & Senda
             return nil
         }
         let result = await handle(task)
+        // A cancelled worker publishes nothing, as upstream (asyncio
+        // cancellation is not a task failure).
+        if Task.isCancelled { return nil }
         return HeddleWire.wrap(.taskResult(result), lane: envelope.lane)
     }
 
