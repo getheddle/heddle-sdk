@@ -61,12 +61,12 @@ swift run --package-path examples/swift/echo-worker EchoWorker
 ./jvm/gradlew -p jvm :examples:runJavaEcho
 ```
 
-You should see a `TaskResult` JSON object with:
+You should see a framed result (`payload_type` `core.TaskResult`) with:
 
 - `status` set to `completed`
 - `worker_type` set to `echo`
 - an uppercased or echoed `output`
-- `_trace_context` preserved from the input task
+- `_trace_context` on the frame, copied from the input task's frame
 
 ## Build the docs
 

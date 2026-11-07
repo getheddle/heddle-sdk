@@ -11,8 +11,8 @@ Both examples:
 3. Subclass the language worker base.
 4. Supply shallow input/output schemas.
 5. Subscribe through the SDK in-memory transport.
-6. Publish a `TaskMessage`.
-7. Print the resulting `TaskResult`.
+6. Frame a `TaskMessage` with a `_trace_context` lane key and publish it.
+7. Print the resulting framed `TaskResult`, with the lane key copied over.
 
 Run them:
 

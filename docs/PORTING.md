@@ -44,21 +44,26 @@ Never hand-author a different contract.
 
 4. Follow [Contract Evolution](CONTRACT_EVOLUTION.md) for migration rules.
 
-New SDKs must preserve `_trace_context` when present and include it on
-`TaskResult`. See
-[Contract Evolution → Trace context](CONTRACT_EVOLUTION.md#trace-context)
-for the full rule (it's a documented envelope extension, not yet in the
-exported schemas).
+New SDKs must parse and write the `WireEnvelope` frame, keep every
+`_`-prefixed frame key as opaque JSON, and copy those keys from an inbound
+task frame to its result frame. See
+[Contract Evolution → SDK model rules](CONTRACT_EVOLUTION.md#sdk-model-rules).
+Drive the SDK's tests from `schemas/v1/fixtures/manifest.json`: an SDK is
+conformant when it passes every fixture.
 
 ## Model rules
 
 - Preserve snake_case wire keys exactly.
 - Use idiomatic property names in the host language when serializers can map
   them cleanly.
-- Encode timestamps as ISO 8601 strings compatible with upstream Heddle.
-- Keep payload, output, metadata, and context as JSON-object-shaped values.
-- Preserve unknown fields when practical. If the ecosystem makes that awkward,
-  document the limitation.
+- Timestamps exist only on the frame. Parse RFC 3339 with a mandatory offset,
+  accept fractional seconds (truncate past microseconds) and reject a leap
+  second; compare as instants. Most standard ISO 8601 parsers are too lenient
+  or too strict here: test against the fixtures.
+- Integer fields take JSON integers; accept integral floats (`420.0`), reject
+  strings and booleans. Check the JSON library's coercion defaults.
+- Keep input, output, metadata, and context as JSON-object-shaped values.
+- Reject unknown non-`_` frame keys; ignore unknown body keys.
 - Decide enum behavior before publication. Strict enums are simple, but
   upstream enum additions become breaking changes unless the SDK has an
   unknown-value strategy.

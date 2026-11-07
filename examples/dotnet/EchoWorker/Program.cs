@@ -12,15 +12,23 @@ var task = new TaskMessage
     ParentTaskId = "goal-demo-1",
     WorkerType = "echo",
     ModelTier = ModelTier.Local,
-    Payload = new JsonObject
+    Input = new JsonObject
     {
         ["text"] = "hello from .NET",
     },
-    TraceContext = new Dictionary<string, string>
-    {
-        ["traceparent"] = "00-00000000000000000000000000000000-0000000000000000-01",
-    },
 };
+
+// Frame the task. `_`-prefixed Middleware-Lane keys ride the frame and come
+// back unchanged on the result.
+var frame = HeddleWire.Wrap(
+    task,
+    new Dictionary<string, JsonNode?>
+    {
+        ["_trace_context"] = new JsonObject
+        {
+            ["traceparent"] = "00-00000000000000000000000000000000-0000000000000000-01",
+        },
+    });
 
 var resultSubject = HeddleSubjects.Results(task.ParentTaskId);
 await using var resultMessages = transport
@@ -35,7 +43,7 @@ while (transport.SubscriberCount(worker.Subject, worker.QueueGroup) == 0)
 
 await transport.PublishAsync(
     worker.Subject,
-    HeddleJson.SerializeToBytes(task),
+    HeddleWire.Serialize(frame),
     timeout.Token);
 
 if (!await resultMessages.MoveNextAsync())
@@ -43,8 +51,8 @@ if (!await resultMessages.MoveNextAsync())
     throw new InvalidOperationException("Worker completed without publishing a result.");
 }
 
-var result = HeddleJson.Deserialize<TaskResult>(resultMessages.Current.Payload.Span);
-Console.WriteLine(JsonSerializer.Serialize(result, HeddleJson.Options));
+var result = HeddleWire.ParseFrame(resultMessages.Current.Payload.Span);
+Console.WriteLine(HeddleWire.ToJsonObject(result).ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
 
 await transport.DisposeAsync();
 try

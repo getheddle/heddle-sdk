@@ -57,7 +57,7 @@ surface. The subject contract does not change:
 - subscribe to `heddle.tasks.{worker_type}.{tier}`
 - use queue group `processors-{worker_type}`
 - publish results to `heddle.results.{parent_task_id}`
-- preserve `_trace_context` when it is present
+- send and receive `WireEnvelope` frames, and copy every `_`-prefixed lane key (such as `_trace_context`) from task to result
 
 The core packages deliberately avoid depending on a concrete NATS client. A
 broker adapter should implement `IHeddleTransport` or `HeddleTransport`, then

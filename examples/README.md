@@ -24,7 +24,7 @@ swift run --package-path examples/swift/echo-worker EchoWorker
 ```
 
 The Swift example subclasses `HeddleWorker<Payload, Output>`, processes the same
-logical payload, and prints the encoded result JSON.
+logical payload, and prints the framed result JSON.
 
 ## What to copy into a real worker
 

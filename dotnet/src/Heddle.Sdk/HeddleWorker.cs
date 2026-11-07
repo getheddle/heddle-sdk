@@ -14,8 +14,8 @@ namespace Heddle.Sdk;
 /// <b>What you implement:</b> the abstract
 /// <see cref="ProcessAsync"/> method. You receive a typed
 /// <typeparamref name="TPayload"/> deserialised from the inbound
-/// <see cref="TaskMessage.Payload"/>, plus the task's metadata
-/// dictionary. You return a <see cref="WorkerOutput{TOutput}"/>
+/// <see cref="TaskMessage.Input"/>, plus the task's metadata
+/// dictionary (with <c>model_tier</c> added, as upstream). You return a <see cref="WorkerOutput{TOutput}"/>
 /// containing your typed domain output and optional metrics.
 /// </para>
 /// <para>
@@ -24,8 +24,10 @@ namespace Heddle.Sdk;
 /// <item>Subscribing to the right wire subject
 ///   (<c>heddle.tasks.{worker_type}.{tier}</c>) with the right queue
 ///   group (<c>processors-{worker_type}</c>).</item>
-/// <item>Decoding inbound <see cref="TaskMessage"/> bytes and skipping
-///   malformed messages without crashing the subscription loop
+/// <item>Parsing the inbound <see cref="WireEnvelope"/> frame and its
+///   <see cref="TaskMessage"/> body, and skipping malformed messages
+///   (invalid frame, invalid body, or any <c>payload_type</c> other than
+///   <c>core.TaskMessage</c>) without crashing the subscription loop
 ///   (calls <see cref="OnMalformedMessageAsync"/> for hooks).</item>
 /// <item>Shallow JSON-Schema validation of the input payload
 ///   against <see cref="InputSchema"/>, if provided.</item>
@@ -33,12 +35,13 @@ namespace Heddle.Sdk;
 /// <item>Calling <see cref="ProcessAsync"/>.</item>
 /// <item>Encoding the output and shallow-validating against
 ///   <see cref="OutputSchema"/>, if provided.</item>
-/// <item>Constructing the wire <see cref="TaskResult"/> envelope:
-///   copying routing fields from the inbound task
-///   (<c>TaskId</c>, <c>ParentTaskId</c>, <c>WorkerType</c>),
-///   propagating <c>_trace_context</c>, measuring elapsed time,
-///   pulling typed output + metrics from your <see cref="WorkerOutput{TOutput}"/>.</item>
-/// <item>Publishing the result to
+/// <item>Constructing the <see cref="TaskResult"/> body: copying routing
+///   fields from the inbound task (<c>TaskId</c>, <c>ParentTaskId</c>,
+///   <c>WorkerType</c>), measuring elapsed time, and pulling typed output
+///   and metrics from your <see cref="WorkerOutput{TOutput}"/>.</item>
+/// <item>Framing the result with a fresh <c>message_id</c> and timestamps,
+///   copying every <c>_</c>-prefixed Middleware-Lane key (for example
+///   <c>_trace_context</c>) from the inbound frame, and publishing it to
 ///   <c>heddle.results.{parent_task_id or "default"}</c>.</item>
 /// <item>Calling <see cref="ResetAsync"/> between tasks — workers are
 ///   stateless in every language SDK (cross-repo invariant C3); the
@@ -65,7 +68,7 @@ namespace Heddle.Sdk;
 /// </remarks>
 /// <typeparam name="TPayload">
 /// The native type for the worker's input payload. Must be
-/// deserialisable from the JSON object on <c>TaskMessage.payload</c>.
+/// deserialisable from the JSON object in <c>TaskMessage.input</c>.
 /// </typeparam>
 /// <typeparam name="TOutput">
 /// The native type for the worker's output. Must serialise to a JSON
@@ -106,14 +109,32 @@ public abstract class HeddleWorker<TPayload, TOutput>
             .SubscribeAsync(Subject, QueueGroup, cancellationToken)
             .WithCancellation(cancellationToken))
         {
+            WireEnvelope envelope;
             TaskMessage task;
             try
             {
-                task = HeddleJson.Deserialize<TaskMessage>(message.Payload.Span);
+                envelope = HeddleWire.ParseFrame(message.Payload.Span);
+                if (envelope.PayloadType != PayloadTypes.TaskMessage)
+                {
+                    throw new WireFormatException(
+                        WireLayer.Dispatch,
+                        $"expected payload_type '{PayloadTypes.TaskMessage}' on a task subject, got '{envelope.PayloadType}'");
+                }
+
+                task = (TaskMessage)HeddleWire.ParseBody(envelope);
             }
-            catch (Exception ex) when (ex is JsonException or NotSupportedException)
+            catch (WireFormatException ex)
             {
                 await OnMalformedMessageAsync(message, ex, cancellationToken);
+                continue;
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                // Defensive: no single message may stop the loop (Invariant 8).
+                await OnMalformedMessageAsync(
+                    message,
+                    new WireFormatException(WireLayer.Frame, ex.Message, ex),
+                    cancellationToken);
                 continue;
             }
 
@@ -121,61 +142,59 @@ public abstract class HeddleWorker<TPayload, TOutput>
             var subject = HeddleSubjects.Results(task.ParentTaskId);
             await transport.PublishAsync(
                 subject,
-                HeddleJson.SerializeToBytes(result),
+                HeddleWire.Serialize(HeddleWire.Wrap(result, envelope.Lane)),
                 cancellationToken);
         }
     }
 
+    /// <summary>
+    /// Run one task through validation, <see cref="ProcessAsync"/> and
+    /// result assembly. Never throws for a processing failure: the result
+    /// has <see cref="TaskStatus.Failed"/> instead.
+    /// </summary>
     public async Task<TaskResult> HandleAsync(
         TaskMessage task,
         CancellationToken cancellationToken = default)
     {
         var stopwatch = Stopwatch.StartNew();
+        long Elapsed() => stopwatch.ElapsedMilliseconds;
         try
         {
-            var inputErrors = ShallowSchemaValidator.Validate(task.Payload, InputSchema, "input");
+            var inputErrors = ShallowSchemaValidator.Validate(task.Input, InputSchema, "input");
             if (inputErrors.Count > 0)
             {
-                return Failed(task, $"Input validation: {string.Join("; ", inputErrors)}");
+                return Result(task, TaskStatus.Failed, Elapsed(), error: $"Input validation: {string.Join("; ", inputErrors)}");
             }
 
-            var payload = task.Payload.Deserialize<TPayload>(HeddleJson.Options);
+            var payload = task.Input.Deserialize<TPayload>(HeddleJson.Options);
             if (payload is null)
             {
-                return Failed(task, $"Unable to deserialize payload as {typeof(TPayload).Name}");
+                return Result(task, TaskStatus.Failed, Elapsed(), error: $"Unable to deserialize input as {typeof(TPayload).Name}");
             }
 
-            var output = await ProcessAsync(payload, task.Metadata, cancellationToken);
+            var metadata = (JsonObject)task.Metadata.DeepClone();
+            metadata["model_tier"] = WireEnum.ToWire(task.ModelTier);
+            var output = await ProcessAsync(payload, metadata, cancellationToken);
             var outputNode = JsonSerializer.SerializeToNode(output.Output, HeddleJson.Options);
             if (outputNode is not JsonObject outputObject)
             {
-                return Failed(task, "Worker output must serialize to a JSON object");
+                return Result(task, TaskStatus.Failed, Elapsed(), error: "Worker output must serialize to a JSON object",
+                    modelUsed: output.ModelUsed, tokens: output.TokenUsage);
             }
 
             var outputErrors = ShallowSchemaValidator.Validate(outputObject, OutputSchema, "output");
             if (outputErrors.Count > 0)
             {
-                return Failed(task, $"Output validation: {string.Join("; ", outputErrors)}");
+                return Result(task, TaskStatus.Failed, Elapsed(), error: $"Output validation: {string.Join("; ", outputErrors)}",
+                    modelUsed: output.ModelUsed, tokens: output.TokenUsage);
             }
 
-            stopwatch.Stop();
-            return new TaskResult
-            {
-                TaskId = task.TaskId,
-                ParentTaskId = task.ParentTaskId,
-                WorkerType = task.WorkerType,
-                Status = TaskStatus.Completed,
-                Output = outputObject,
-                ModelUsed = output.ModelUsed,
-                TokenUsage = output.TokenUsage ?? [],
-                Metadata = output.Metadata ?? [],
-                ProcessingTimeMs = (int)stopwatch.ElapsedMilliseconds,
-                TraceContext = task.TraceContext,
-            };
+            return Result(task, TaskStatus.Completed, Elapsed(), output: outputObject,
+                modelUsed: output.ModelUsed, tokens: output.TokenUsage, metadata: output.Metadata);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            return Failed(task, ex.Message);
+            return Result(task, TaskStatus.Failed, Elapsed(), error: ex.Message);
         }
         finally
         {
@@ -236,8 +255,9 @@ public abstract class HeddleWorker<TPayload, TOutput>
     }
 
     /// <summary>
-    /// Optional hook called when the inbound transport message can't
-    /// be decoded as a <see cref="TaskMessage"/>. Override to log,
+    /// Optional hook called when the inbound transport message is not a
+    /// valid framed <see cref="TaskMessage"/>. The exception is a
+    /// <see cref="WireFormatException"/> naming the rejecting layer. Override to log,
     /// emit a metric, or report to a dead-letter sink.
     /// </summary>
     /// <remarks>
@@ -254,18 +274,35 @@ public abstract class HeddleWorker<TPayload, TOutput>
         return Task.CompletedTask;
     }
 
-    private static TaskResult Failed(TaskMessage task, string error)
+    // Mirrors heddle.worker.base._publish_result: token_usage always carries
+    // exactly prompt_tokens and completion_tokens, and metadata comes from the
+    // worker's output (never the task's).
+    private static TaskResult Result(
+        TaskMessage task,
+        TaskStatus status,
+        long elapsedMs,
+        JsonObject? output = null,
+        string? error = null,
+        string? modelUsed = null,
+        Dictionary<string, long>? tokens = null,
+        JsonObject? metadata = null)
     {
         return new TaskResult
         {
             TaskId = task.TaskId,
             ParentTaskId = task.ParentTaskId,
             WorkerType = task.WorkerType,
-            Status = TaskStatus.Failed,
+            Status = status,
+            Output = output,
             Error = error,
-            TokenUsage = [],
-            Metadata = [],
-            TraceContext = task.TraceContext,
+            ModelUsed = modelUsed,
+            TokenUsage = new Dictionary<string, long>
+            {
+                ["prompt_tokens"] = tokens?.GetValueOrDefault("prompt_tokens") ?? 0,
+                ["completion_tokens"] = tokens?.GetValueOrDefault("completion_tokens") ?? 0,
+            },
+            Metadata = metadata ?? [],
+            ProcessingTimeMs = elapsedMs,
         };
     }
 }

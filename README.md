@@ -100,12 +100,14 @@ docs/images/             exported SVG diagrams
 
 The bus protocol is intentionally small:
 
-- `TaskMessage` and `TaskResult` are JSON envelopes.
+- Every message is a `WireEnvelope` frame; `TaskMessage` and `TaskResult` are
+  bodies inside it, chosen by `payload_type`.
 - Tasks enter through `heddle.tasks.incoming`.
 - The router dispatches to `heddle.tasks.{worker_type}.{tier}`.
 - Workers publish to `heddle.results.{parent_task_id or "default"}`.
 - Foreign processor workers use queue group `processors-{worker_type}`.
-- Trace context, when present, rides as top-level `_trace_context`.
+- Middleware-Lane keys (top-level, `_`-prefixed, such as `_trace_context`)
+  ride the frame and are copied from each task to its result.
 
 The Python repository remains the source of truth. When the Pydantic models
 change there, run its schema export, then sync the updated files here.

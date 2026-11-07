@@ -9,7 +9,8 @@ import Foundation
 /// The `process(payload:metadata:)` method (overridden in your
 /// subclass — the base implementation calls `fatalError`). You
 /// receive a typed `Payload` deserialised from the inbound
-/// ``TaskMessage/payload``, plus the task's metadata dictionary. You
+/// ``TaskMessage/input``, plus the task's metadata dictionary (with
+/// `model_tier` added, as upstream). You
 /// return a ``WorkerOutput`` containing your typed domain output and
 /// optional metrics.
 ///
@@ -18,22 +19,25 @@ import Foundation
 /// - Subscribing to the right wire subject
 ///   (`heddle.tasks.{worker_type}.{tier}`) with the right queue
 ///   group (`processors-{worker_type}`).
-/// - Decoding inbound ``TaskMessage`` bytes and skipping malformed
-///   messages without crashing the subscription loop (calls
-///   ``malformedMessage(_:)`` for hooks).
+/// - Parsing the inbound ``WireEnvelope`` frame and its ``TaskMessage``
+///   body, and skipping malformed messages (invalid frame, invalid
+///   body, or any `payload_type` other than `core.TaskMessage`) without
+///   crashing the subscription loop (calls ``malformedMessage(_:)`` for
+///   hooks).
 /// - Shallow JSON-Schema validation of the input payload against
 ///   ``inputSchema``, if provided.
 /// - Deserialising the payload to `Payload`.
 /// - Calling `process(payload:metadata:)`.
 /// - Encoding the output and shallow-validating against
 ///   ``outputSchema``, if provided.
-/// - Constructing the wire ``TaskResult`` envelope: copying routing
-///   fields from the inbound task (``TaskMessage/taskId``,
+/// - Constructing the ``TaskResult`` body: copying routing fields from
+///   the inbound task (``TaskMessage/taskId``,
 ///   ``TaskMessage/parentTaskId``, ``TaskMessage/workerType``),
-///   propagating ``TaskMessage/traceContext``, measuring elapsed
-///   time, pulling typed output + metrics from your
-///   ``WorkerOutput``.
-/// - Publishing the result to
+///   measuring elapsed time, and pulling typed output and metrics from
+///   your ``WorkerOutput``.
+/// - Framing the result with a fresh `message_id` and timestamps,
+///   copying every `_`-prefixed Middleware-Lane key (for example
+///   `_trace_context`) from the inbound frame, and publishing it to
 ///   `heddle.results.{parent_task_id or "default"}`.
 /// - Calling ``reset()`` between tasks — workers are stateless in
 ///   every language SDK (cross-repo invariant C3); the base class
@@ -59,7 +63,7 @@ import Foundation
 ///
 /// - Parameters:
 ///   - Payload: The native type for the worker's input payload. Must
-///     be `Decodable` from the JSON object on `TaskMessage.payload`.
+///     be `Decodable` from the JSON object in `TaskMessage.input`.
 ///   - Output: The native type for the worker's output. Must
 ///     `Encodable`-serialise to a JSON object (the base class checks
 ///     this and fails the task with a clear error if not).
@@ -130,40 +134,66 @@ open class HeddleWorker<Payload: Decodable & Sendable, Output: Encodable & Senda
     public func run(transport: HeddleTransport) async throws {
         let stream = try await transport.subscribe(subject: subject, queueGroup: queueGroup)
         for try await message in stream {
-            guard let result = await handle(message.payload) else {
+            guard let frame = await handle(message.payload) else {
                 continue
             }
-            let data = try HeddleCoders.encode(result)
+            guard case let .taskResult(result) = try HeddleWire.parseBody(frame) else { continue }
             try await transport.publish(
                 subject: HeddleSubjects.results(parentTaskId: result.parentTaskId),
-                payload: data
+                payload: try HeddleWire.serialize(frame)
             )
         }
     }
 
-    public func handle(_ data: Data) async -> TaskResult? {
+    /// Handle one inbound transport message: parse the frame, run the task,
+    /// and return the framed result. Returns `nil` (after calling
+    /// ``malformedMessage(_:)``) when the message is not a valid framed
+    /// ``TaskMessage``.
+    public func handle(_ data: Data) async -> WireEnvelope? {
+        let envelope: WireEnvelope
+        let task: TaskMessage
         do {
-            let task = try HeddleCoders.decode(TaskMessage.self, from: data)
-            return await handle(task)
+            envelope = try HeddleWire.parseFrame(data)
+            guard envelope.payloadType == PayloadTypes.taskMessage else {
+                throw WireFormatError(
+                    .dispatch,
+                    "expected payload_type '\(PayloadTypes.taskMessage)' on a task subject, got '\(envelope.payloadType)'"
+                )
+            }
+            guard case let .taskMessage(body) = try HeddleWire.parseBody(envelope) else {
+                throw WireFormatError(.dispatch, "not a task message")
+            }
+            task = body
         } catch {
             await malformedMessage(error)
             return nil
         }
+        let result = await handle(task)
+        // A cancelled worker publishes nothing, as upstream (asyncio
+        // cancellation is not a task failure).
+        if Task.isCancelled { return nil }
+        return HeddleWire.wrap(.taskResult(result), lane: envelope.lane)
     }
 
+    /// Run one task through validation, `process(payload:metadata:)` and
+    /// result assembly. Never throws for a processing failure: the result
+    /// has ``TaskStatus/failed`` instead.
     public func handle(_ task: TaskMessage) async -> TaskResult {
+        let started = ContinuousClock.now
+        let elapsed = { durationMillis(started.duration(to: .now)) }
         let result: TaskResult
         do {
-            result = try await handleCore(task)
+            result = try await handleCore(task, elapsed: elapsed)
         } catch {
-            result = failure(task, error: error.localizedDescription)
+            result = Self.result(task, .failed, elapsed(), error: String(describing: error))
         }
         await reset()
         return result
     }
 
-    /// Optional hook called when the inbound transport message can't
-    /// be decoded as a ``TaskMessage``. Override to log, emit a
+    /// Optional hook called when the inbound transport message is not a
+    /// valid framed ``TaskMessage``. The error is a ``WireFormatError``
+    /// naming the rejecting layer. Override to log, emit a
     /// metric, or report to a dead-letter sink.
     ///
     /// Malformed messages are skipped, not process-fatal — the
@@ -172,26 +202,27 @@ open class HeddleWorker<Payload: Decodable & Sendable, Output: Encodable & Senda
     /// replica.
     open func malformedMessage(_ error: Error) async {}
 
-    private func handleCore(_ task: TaskMessage) async throws -> TaskResult {
+    private func handleCore(_ task: TaskMessage, elapsed: () -> Int) async throws -> TaskResult {
         let inputErrors = ShallowSchemaValidator.validate(
-            data: task.payload,
+            data: task.input,
             schema: inputSchema,
             context: "input"
         )
         if !inputErrors.isEmpty {
-            return failure(task, error: "Input validation: \(inputErrors.joined(separator: "; "))")
+            return Self.result(task, .failed, elapsed(), error: "Input validation: \(inputErrors.joined(separator: "; "))")
         }
 
-        let payloadData = try HeddleCoders.encode(task.payload)
+        let payloadData = try HeddleCoders.encode(task.input)
         let payload = try HeddleCoders.decode(Payload.self, from: payloadData)
-        let started = ContinuousClock.now
-        let processed = try await process(payload: payload, metadata: task.metadata)
-        let elapsed = started.duration(to: .now)
+        var metadata = task.metadata
+        metadata["model_tier"] = .string(task.modelTier.rawValue)
+        let processed = try await process(payload: payload, metadata: metadata)
 
         let outputData = try HeddleCoders.encode(processed.output)
         let outputValue = try HeddleCoders.decode(JSONValue.self, from: outputData)
         guard case let .object(outputObject) = outputValue else {
-            return failure(task, error: "Worker output must serialize to a JSON object")
+            return Self.result(task, .failed, elapsed(), error: "Worker output must serialize to a JSON object",
+                               modelUsed: processed.modelUsed, tokens: processed.tokenUsage)
         }
 
         let outputErrors = ShallowSchemaValidator.validate(
@@ -200,32 +231,41 @@ open class HeddleWorker<Payload: Decodable & Sendable, Output: Encodable & Senda
             context: "output"
         )
         if !outputErrors.isEmpty {
-            return failure(task, error: "Output validation: \(outputErrors.joined(separator: "; "))")
+            return Self.result(task, .failed, elapsed(), error: "Output validation: \(outputErrors.joined(separator: "; "))",
+                               modelUsed: processed.modelUsed, tokens: processed.tokenUsage)
         }
 
-        return TaskResult(
-            taskId: task.taskId,
-            parentTaskId: task.parentTaskId,
-            workerType: task.workerType,
-            status: .completed,
-            output: outputObject,
-            error: nil,
-            modelUsed: processed.modelUsed,
-            tokenUsage: processed.tokenUsage,
-            metadata: processed.metadata,
-            processingTimeMs: durationMillis(elapsed),
-            traceContext: task.traceContext
-        )
+        return Self.result(task, .completed, elapsed(), output: outputObject,
+                           modelUsed: processed.modelUsed, tokens: processed.tokenUsage, metadata: processed.metadata)
     }
 
-    private func failure(_ task: TaskMessage, error: String) -> TaskResult {
+    // Mirrors heddle.worker.base._publish_result: token_usage always carries
+    // exactly prompt_tokens and completion_tokens, and metadata comes from the
+    // worker's output (never the task's).
+    private static func result(
+        _ task: TaskMessage,
+        _ status: TaskStatus,
+        _ elapsedMs: Int,
+        output: [String: JSONValue]? = nil,
+        error: String? = nil,
+        modelUsed: String? = nil,
+        tokens: [String: Int] = [:],
+        metadata: [String: JSONValue] = [:]
+    ) -> TaskResult {
         TaskResult(
             taskId: task.taskId,
             parentTaskId: task.parentTaskId,
             workerType: task.workerType,
-            status: .failed,
+            status: status,
+            output: output,
             error: error,
-            traceContext: task.traceContext
+            modelUsed: modelUsed,
+            tokenUsage: [
+                "prompt_tokens": tokens["prompt_tokens"] ?? 0,
+                "completion_tokens": tokens["completion_tokens"] ?? 0,
+            ],
+            metadata: metadata,
+            processingTimeMs: elapsedMs
         )
     }
 }
