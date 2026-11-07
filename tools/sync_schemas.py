@@ -4,6 +4,10 @@
 The canonical JSON Schemas are exported by the sibling ``getheddle/heddle``
 repository. This tool copies those schemas into ``schemas/v1`` and maintains a
 small manifest of hashes so CI can detect accidental local drift.
+
+It also vendors the language-neutral conformance fixtures under
+``schemas/v1/fixtures/`` (every file, recursively). Each SDK's test suite drives
+its wire-conformance tests from ``fixtures/manifest.json``.
 """
 
 from __future__ import annotations
@@ -24,6 +28,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SCHEMA_VERSION = "v1"
 MANIFEST_PATH = ROOT / "schemas" / "manifest.json"
 UPSTREAM_REPOSITORY = "getheddle/heddle"
+FIXTURES_DIR = "fixtures"
 
 
 def _schema_dir(root: Path, version: str) -> Path:
@@ -37,6 +42,18 @@ def _schema_files(schema_dir: Path) -> list[Path]:
     if not files:
         raise SystemExit(f"No schema files found in: {schema_dir}")
     return files
+
+
+def _fixture_files(schema_dir: Path) -> list[Path]:
+    """Every file under ``fixtures/``, sorted; empty if there is no such folder."""
+    fixture_dir = schema_dir / FIXTURES_DIR
+    if not fixture_dir.exists():
+        return []
+    return sorted(path for path in fixture_dir.rglob("*") if path.is_file())
+
+
+def _fixture_key(schema_dir: Path, path: Path) -> str:
+    return path.relative_to(schema_dir).as_posix()
 
 
 def _sha256(path: Path) -> str:
@@ -62,9 +79,11 @@ def _git_commit(path: Path) -> str | None:
 
 
 def _manifest(schema_root: Path, version: str, upstream: Path | None) -> dict[str, Any]:
-    schemas = {
-        path.name: {"sha256": _sha256(path)}
-        for path in _schema_files(_schema_dir(schema_root, version))
+    schema_dir = _schema_dir(schema_root, version)
+    schemas = {path.name: {"sha256": _sha256(path)} for path in _schema_files(schema_dir)}
+    fixtures = {
+        _fixture_key(schema_dir, path): {"sha256": _sha256(path)}
+        for path in _fixture_files(schema_dir)
     }
     source: dict[str, Any] = {
         "repository": UPSTREAM_REPOSITORY,
@@ -78,6 +97,7 @@ def _manifest(schema_root: Path, version: str, upstream: Path | None) -> dict[st
         "schema_version": version,
         "source": source,
         "schemas": schemas,
+        "fixtures": fixtures,
     }
 
 
@@ -137,6 +157,20 @@ def _copy_schemas(upstream: Path, version: str) -> None:
             stale.unlink()
             print(f"removed stale {stale.relative_to(ROOT)}")
 
+    copied_fixtures: set[str] = set()
+    for source in _fixture_files(source_dir):
+        key = _fixture_key(source_dir, source)
+        target = target_dir / key
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(source, target)
+        copied_fixtures.add(key)
+        print(f"copied {source.relative_to(upstream)}")
+
+    for stale in _fixture_files(target_dir):
+        if _fixture_key(target_dir, stale) not in copied_fixtures:
+            stale.unlink()
+            print(f"removed stale {stale.relative_to(ROOT)}")
+
     _write_manifest(version, upstream)
     print(f"wrote {MANIFEST_PATH.relative_to(ROOT)}")
 
@@ -147,6 +181,12 @@ def _check_upstream(upstream: Path, version: str) -> int:
 
     source_files = {path.name: path for path in _schema_files(source_dir)}
     target_files = {path.name: path for path in _schema_files(target_dir)}
+    source_files.update(
+        {_fixture_key(source_dir, path): path for path in _fixture_files(source_dir)}
+    )
+    target_files.update(
+        {_fixture_key(target_dir, path): path for path in _fixture_files(target_dir)}
+    )
 
     missing = sorted(source_files.keys() - target_files.keys())
     extra = sorted(target_files.keys() - source_files.keys())
@@ -194,17 +234,17 @@ def main() -> int:
     action.add_argument(
         "--update",
         action="store_true",
-        help="Copy schemas from the upstream checkout and rewrite the manifest.",
+        help="Copy schemas and fixtures from the upstream checkout and rewrite the manifest.",
     )
     action.add_argument(
         "--check",
         action="store_true",
-        help="Verify the local schema manifest matches checked-in schemas.",
+        help="Verify the local manifest matches the checked-in schemas and fixtures.",
     )
     action.add_argument(
         "--check-upstream",
         action="store_true",
-        help="Compare checked-in schemas with the upstream checkout.",
+        help="Compare checked-in schemas and fixtures with the upstream checkout.",
     )
     args = parser.parse_args()
 

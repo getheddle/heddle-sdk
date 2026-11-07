@@ -1,27 +1,104 @@
 {
+  "fixtures": {
+    "fixtures/README.md": {
+      "sha256": "06d7d69051c6f418807ca930e106c66b96bb156cd69e45d356ff9fa9c3ae8d11"
+    },
+    "fixtures/invalid/body_orchestrator_goal_missing_instruction.json": {
+      "sha256": "bb28e754ef2a7af8ec621a34946e53f285c555af065329ba0fbcce4d3a5ede9e"
+    },
+    "fixtures/invalid/body_task_message_bad_model_tier.json": {
+      "sha256": "0a9b8a44fab3160b5d4f2afee05ff9645eb48b2821e3f8bb1a5881fb43d845a2"
+    },
+    "fixtures/invalid/body_task_message_input_not_object.json": {
+      "sha256": "a060038d1f597415ca718a37db351119ce88430b9f45d47deac279cac3f3d826"
+    },
+    "fixtures/invalid/body_task_message_missing_worker_type.json": {
+      "sha256": "237bab75974a55fb7d54a7cd9fcca7821ab030746d49e5c913cbb575fbff42fd"
+    },
+    "fixtures/invalid/body_task_result_bad_status.json": {
+      "sha256": "ee921a2874d6c0227aa8d3188892e3cd2f9a78d603bbf385020de58ad5f43bd1"
+    },
+    "fixtures/invalid/body_task_result_number_as_string.json": {
+      "sha256": "419a2a26344d556dc2847b9e08eeb73d94039c902c248c5bc20925132b3e7f66"
+    },
+    "fixtures/invalid/dispatch_unregistered_payload_type.json": {
+      "sha256": "c243c7126deeb99bc0e0e2bf36fdc9b49db2d6ba18c3a8d490500ab804009636"
+    },
+    "fixtures/invalid/frame_bad_timestamp.json": {
+      "sha256": "d9ff2c9e4273d04c63095db355c9f81df5e95eb5ac544190bebfa00c61a75bb7"
+    },
+    "fixtures/invalid/frame_epoch_timestamp.json": {
+      "sha256": "29790175b1c3cdcd3b78e1de7b1e62c595248302e897683ef6c4749527404dbe"
+    },
+    "fixtures/invalid/frame_missing_payload_type.json": {
+      "sha256": "230c36cc722775894d131fdb8237607ff6626021fb215609dffa5b887a0348ec"
+    },
+    "fixtures/invalid/frame_null_timestamp.json": {
+      "sha256": "114cb556b5267d4f1946b2865d83f9ffcede4f41b32f9153b5cb80d4c2727a56"
+    },
+    "fixtures/invalid/frame_payload_not_object.json": {
+      "sha256": "214f5d24c5bfcfb51feec9cbc0686550db2143af8ab66913020816dbe8e2175e"
+    },
+    "fixtures/invalid/frame_timestamp_without_offset.json": {
+      "sha256": "2eb21d70ce41270986816fd61d3276a40fa412365f57e84d775215cfa481958b"
+    },
+    "fixtures/invalid/frame_unknown_key.json": {
+      "sha256": "e5e420c29817d80b235d8f21e55bbdcd263e1e8ecd3504b23cf501def731724f"
+    },
+    "fixtures/manifest.json": {
+      "sha256": "d160890ad75e2a1fd10f7d06913c99341d1599012d525b138c6f6a16d411c25a"
+    },
+    "fixtures/valid/orchestrator_goal.json": {
+      "sha256": "018ecb60dc4b16c6e633dd1ee3e42a2ad5967c8e83a42283175b3f8759019438"
+    },
+    "fixtures/valid/orchestrator_goal_utc_offset.json": {
+      "sha256": "cb00188d1786f0e37f96a3512e36b1d7f5b48e5dab13e3179504c7928eb85164"
+    },
+    "fixtures/valid/task_message_full.json": {
+      "sha256": "4d8797c1492d195c7bbae10f6b6579826fff1a3330434be9fbb6fd7d3b695ec2"
+    },
+    "fixtures/valid/task_message_middleware_lane.json": {
+      "sha256": "4cea33a1fdd96f95df6464a05763ecb94dd44b535555b1aba24d5249d83e1788"
+    },
+    "fixtures/valid/task_message_minimal_defaults.json": {
+      "sha256": "d89e3d0807cdb3f77dd6fe5abada0d82749fcf6094d3683ff3289b88f249aa85"
+    },
+    "fixtures/valid/task_message_unknown_body_key.json": {
+      "sha256": "e2c202b42fa7255164bea3f996998803b7a4d8bbbc44f05be2309b4f5c07f062"
+    },
+    "fixtures/valid/task_result_completed.json": {
+      "sha256": "ccf070c95332c47ad9700ae8cd4d7bc3b6071999ee6cdd2bfcfb497dac37aff6"
+    },
+    "fixtures/valid/task_result_failed.json": {
+      "sha256": "ecae6f08844c137ab4cae5484cb1468620dff9bd7b3c3f9e335dadb27848b75d"
+    },
+    "fixtures/valid/task_result_fractional_seconds.json": {
+      "sha256": "751f11ab6551ff0c8fe7b627e1729bd43102bdca6935fed86b04eccd2bd99f28"
+    },
+    "fixtures/valid/task_result_integral_float.json": {
+      "sha256": "08042e44b508d40915ab65a08e308bb1104b6454c42745ebc86da6b74cfc61a6"
+    }
+  },
   "schema_version": "v1",
   "schemas": {
     "checkpoint_state.schema.json": {
-      "sha256": "78617e142e7c77e103ea84f9611e5bdfd622f696ec1a103df5e5bfa88270d073"
-    },
-    "command_message.schema.json": {
-      "sha256": "1b8dbd88c876cf52b5d2bb5d562c870680678531e298d9ac2f7854e69859add8"
-    },
-    "event_envelope.schema.json": {
-      "sha256": "b4f0db045e7c1dba51585c6e9a3cd099cabdaba9be9590327a4d23d517690785"
+      "sha256": "98271320a50135deef389ba47bfdef3bd0f43c5d00c4863dc57b460d1cc40648"
     },
     "orchestrator_goal.schema.json": {
-      "sha256": "d4a8eadd4c6d00653acf1af86034c85f43fcaf5c63c73650c8453720280e7aaa"
+      "sha256": "be5c75ebb8dbd401c1076ea2a6f2aa29eef556e632e262ffdf461677004a0689"
     },
     "task_message.schema.json": {
-      "sha256": "18ad03021c17d7bf295343f4a1ed658de4abe5cab68cafd5e65c8a3457f0c1c8"
+      "sha256": "7993253c274cb87328dbfedb4b4d820d256423f3e0041d1a4aaca31103ff1e1f"
     },
     "task_result.schema.json": {
-      "sha256": "caebdaec2e84a7dda236d24c78cfd85a25128d819678ab84879c42970ae5eaac"
+      "sha256": "55fed1c3a85c93c746598d698cf54b1bcb96387d63f540abb478d2f462be9888"
+    },
+    "wire_envelope.schema.json": {
+      "sha256": "065ad8da441d0f6f741925e533c17f0ebaffab58b543d10d612a662fc1d7f4c6"
     }
   },
   "source": {
-    "commit": "50c18869695f9ba39df877a6b36a541cdf2a9277",
+    "commit": "b2a9c4bbbe138a1e4a4ec835b64462b002fb9a8b",
     "path": "schemas/v1",
     "repository": "getheddle/heddle"
   }
