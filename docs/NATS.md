@@ -111,3 +111,7 @@ Adapters carry raw Heddle JSON envelopes on NATS Core subjects:
   frame
 
 NATS Core is at-most-once. Start subscribers before publishing tasks.
+
+To check all three SDKs against a real NATS server and heddle's router in
+one command, run `tools/live_check/run.sh` (needs Docker and a sibling heddle
+checkout; see `tools/live_check/README.md`).

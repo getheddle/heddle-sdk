@@ -82,6 +82,7 @@ uvx --from mkdocs --with mkdocs-material mkdocs build --strict
 schemas/v1/              Canonical Heddle wire schemas copied from heddle
 schemas/manifest.json    Upstream schema commit and file hashes
 tools/sync_schemas.py    Local schema sync and manifest check tool
+tools/live_check/        Live interop check (Docker NATS + heddle router + all SDKs)
 Package.swift            Root SwiftPM publication surface
 dotnet/src/Heddle.Sdk/   .NET SDK package
 dotnet/tests/            .NET SDK regression tests
