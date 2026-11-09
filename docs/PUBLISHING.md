@@ -3,6 +3,11 @@
 This page captures the release path for Heddle SDK packages. It is a readiness
 checklist, not an instruction to publish from CI automatically.
 
+Nothing is published yet: publication waits on the owner's planned
+enhancements ([Roadmap → Publication gate](ROADMAP.md#publication-gate)). This
+page covers .NET (NuGet) and Swift (SwiftPM); the JVM (Maven) path is not
+written yet.
+
 ## Versioning
 
 Package versions should move together across ecosystems when they share the
