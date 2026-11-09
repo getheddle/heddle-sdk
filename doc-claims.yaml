@@ -1,0 +1,7 @@
+# Registered claims (M3): written text that must equal its source.
+# Checked by `workspace doc-check` (heddle-workspace); format in its doc_check.py.
+claims:
+  - id: roadmap-fixture-count
+    file: docs/ROADMAP.md
+    pattern: 'pass all (\d+) vendored conformance fixtures|golden fixtures exist \((\d+)'
+    equals: {json_count: schemas/v1/fixtures/manifest.json, key: fixtures}
