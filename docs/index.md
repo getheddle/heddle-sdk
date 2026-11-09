@@ -61,7 +61,7 @@ swift run --package-path examples/swift/echo-worker EchoWorker
 | [Architecture](ARCHITECTURE.md) | You need the repo map and lifecycle. |
 | [Adding a Language SDK](PORTING.md) | You are adding JS/TS or another language runtime. |
 | [Publishing Packages](PUBLISHING.md) | You are preparing NuGet, SwiftPM, or Maven releases. |
-| [Roadmap](ROADMAP.md) | You want the planned sequence for schema, publishing, and JS/TS work. |
+| [Roadmap](ROADMAP.md) | You want current status, the publication gate, or the planned publishing and JS/TS work. |
 | [Contract Evolution](CONTRACT_EVOLUTION.md) | You need schema sync and client migration rules. |
 | [Contributing](CONTRIBUTING.md) | You are opening a PR. |
 | [Coding Guide](CODING_GUIDE.md) | You are changing SDK code or docs. |

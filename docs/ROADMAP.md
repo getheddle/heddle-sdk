@@ -1,6 +1,6 @@
 # SDK Roadmap
 
-Last updated: 2026-05-12
+Last updated: 2026-11-08
 
 This roadmap captures the working plan for turning `heddle-sdk` into the
 standard home for Heddle language SDKs. It is intentionally practical: each
@@ -24,18 +24,23 @@ likely to drift from `getheddle/heddle`.
 
 | Area | Status |
 |------|--------|
-| .NET core SDK | Implemented with models, subjects, shallow validation, worker base, in-memory transport, tests |
-| .NET NATS | Implemented with `Heddle.Sdk.Nats`; ready for live-runtime interop |
-| Swift core SDK | Implemented with `Codable` models, subjects, shallow validation, worker base, in-memory transport |
-| Swift NATS | Real `nats-io/nats.swift` binding builds on macOS; Linux builds package surface only |
-| JVM SDK | Implemented with Kotlin/Java models, subjects, worker base, in-memory transport, NATS adapter |
+| Wire contract | All three SDKs speak heddle's v1 `WireEnvelope` frame (heddle v0.10.0+) and the two I-JSON text rules (v0.12.0+), and pass all 27 vendored conformance fixtures |
+| Live interop | `tools/live_check/` runs .NET, Swift and JVM echo workers against a real heddle router over NATS (Docker) |
+| .NET | Core SDK and `Heddle.Sdk.Nats`; `dotnet pack` verified in CI |
+| Swift | Core SDK; NATS binding builds on macOS, Linux builds the package surface only |
+| JVM | Kotlin/Java core and NATS adapter; built and tested in CI |
 | Docs site | MkDocs site with language guides, NATS docs, Workshop compatibility, and draw.io-generated diagrams |
-| Schema sync | Manifest and sync/check tooling in place |
-| Package publishing | First readiness pass in place |
-| Language porting guide | First draft in place |
-| JS/TS SDK | Planned |
+| Schema sync | Manifest, sync/check tooling and `--check-upstream`, run in CI |
+| Package publishing | Not published. Readiness covers .NET and Swift; JVM (Maven) is not covered yet. Publication waits on the owner's planned enhancements (see *Publication gate*) |
+| JS/TS SDK | Planned, not started |
 
-## Batch 1: contract sync and migration policy
+## Publication gate
+
+No SDK is published to NuGet, SwiftPM, Maven or npm yet. The owner plans
+further enhancements before the first publication; they will be listed here
+when defined. Until then, consumers build the SDKs from source.
+
+## Batch 1: contract sync and migration policy (Completed)
 
 Goal: make upstream schema drift visible and give client migrations a written
 policy before more languages depend on the contract.
@@ -83,11 +88,12 @@ Exit criteria:
 
 ## Batch 3: package publishing readiness
 
-Goal: make .NET and Swift releasable through standard ecosystem tooling.
+Goal: make .NET, Swift and JVM releasable through standard ecosystem tooling.
 
 Status: first readiness pass added root SwiftPM publication manifest,
 NuGet package metadata, `dotnet pack` CI verification, and
-`docs/PUBLISHING.md`.
+`docs/PUBLISHING.md`. Open: the JVM (Maven) path is not in
+`docs/PUBLISHING.md` yet.
 
 Deliverables:
 
@@ -110,18 +116,26 @@ Exit criteria:
 Goal: add JVM support for server-side Java/Kotlin/Scala and a credible Android
 path.
 
-Status: Implemented in `jvm/` directory.
+Status: Implemented in `jvm/` directory. Android compatibility has not been
+verified: no Android build or test exists yet.
 
 Deliverables:
 
 - `jvm/core`: Kotlin/JVM core SDK with Java-friendly APIs.
 - `jvm/nats`: NATS transport adapter using the official Java NATS client.
 - `examples/jvm`: Kotlin and Java echo examples.
-- Android support verified via compatibility testing against core surface.
+- Android support verified via compatibility testing against core surface
+  (not done; see status).
 
 ## Batch 5: release automation and conformance
 
 Goal: make every language release reproducible and comparable.
+
+Status (2026-11-08): partly done. Cross-language golden fixtures exist (27,
+vendored from heddle and run by every SDK in CI) and cover the frame and the
+three message bodies, but not `CheckpointState`. Live interop is checked by
+`tools/live_check/`. Not done: the conformance matrix, the release workflow
+and the release notes template.
 
 Deliverables:
 
@@ -140,6 +154,8 @@ Exit criteria:
   any registry push.
 
 ## Batch 6: JavaScript / TypeScript SDK
+
+Status: planned by the owner, not started.
 
 Goal: add JS/TS support for Node.js (npm) and browser-side actors.
 
@@ -165,10 +181,13 @@ Exit criteria:
 
 - Should Swift remain in this combined repo for publication, or move to a
   Swift-first repo once the API stabilizes?
-- Should `_trace_context` become part of upstream exported schemas, or remain a
-  documented envelope extension preserved by SDKs? (See
-  [Contract Evolution → Trace context](CONTRACT_EVOLUTION.md#trace-context).)
 - Should enum decoding become forward-compatible in all SDKs before the first
   public prerelease?
 - What is the first JVM publication target: JVM-only, Android-compatible JVM,
   or Kotlin Multiplatform?
+
+Resolved:
+
+- `_trace_context` stays out of the exported schemas. It is a Middleware-Lane
+  key carried as opaque JSON on the frame (heddle `DESIGN_INVARIANTS.md` #22;
+  see [Contract Evolution → Trace context](CONTRACT_EVOLUTION.md#trace-context)).
