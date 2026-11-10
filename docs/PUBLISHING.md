@@ -22,6 +22,9 @@ same wire contract.
   version or explicitly breaking prerelease.
 - Release notes must include the upstream Heddle schema commit from
   `schemas/manifest.json`.
+- Release at most once every two weeks, with the same urgent
+  exceptions as heddle: see
+  [When to release](https://github.com/getheddle/heddle/blob/main/docs/RELEASING.md#when-to-release).
 
 ## Release checklist
 
