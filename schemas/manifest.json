@@ -1,7 +1,7 @@
 {
   "fixtures": {
     "fixtures/README.md": {
-      "sha256": "0c4247736a62867b2c1f4ecb7b7d8c3c735bf03455505aa6a31352a0034f0299"
+      "sha256": "1c802ebf31ed23e33f129e659a6123e83aa0b65acf85fdf9539e93bf7c17d352"
     },
     "fixtures/invalid/body_orchestrator_goal_missing_instruction.json": {
       "sha256": "bb28e754ef2a7af8ec621a34946e53f285c555af065329ba0fbcce4d3a5ede9e"
@@ -107,7 +107,7 @@
     }
   },
   "source": {
-    "commit": "f6e869ef590d011b51af2ad8d96266443b20eac7",
+    "commit": "260d04b258b52d39528aa222a619e4fbaad506d3",
     "path": "schemas/v1",
     "repository": "getheddle/heddle"
   }
