@@ -65,7 +65,7 @@ Start with:
 | [JVM SDK](docs/JVM.md) | Implement a Kotlin or Java processor worker |
 | [Architecture](docs/ARCHITECTURE.md) | Repository layout and worker lifecycle |
 | [Adding a Language SDK](docs/PORTING.md) | Porting checklist for JS/TS and future languages |
-| [Publishing Packages](docs/PUBLISHING.md) | NuGet, SwiftPM, and Maven release readiness checklist |
+| [Publishing Packages](docs/PUBLISHING.md) | NuGet and SwiftPM release readiness checklist |
 | [Roadmap](docs/ROADMAP.md) | Status, the publication gate, and planned publishing and JS/TS work |
 | [Contract Evolution](docs/CONTRACT_EVOLUTION.md) | Schema sync and client migration policy |
 | [Contributing](docs/CONTRIBUTING.md) | Contribution boundaries and verification |
